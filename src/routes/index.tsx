@@ -1,29 +1,48 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Landing } from "@/game/Landing";
+import { GameRoom } from "@/game/GameRoom";
+import type { GameMode } from "@/game/data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Ransomware Crisis Room — Mô phỏng khủng hoảng an ninh mạng" },
+      {
+        name: "description",
+        content:
+          "Trò chơi mô phỏng khủng hoảng ransomware dành cho nhân viên, quản lý và lãnh đạo. 8 vòng quyết định an toàn, giáo dục và đầy kịch tính.",
+      },
+      { property: "og:title", content: "Ransomware Crisis Room" },
+      {
+        property: "og:description",
+        content:
+          "Bạn có cứu được doanh nghiệp khỏi ransomware không? Trò chơi mô phỏng an toàn dành cho sự kiện đào tạo an ninh mạng.",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+  const [mode, setMode] = useState<GameMode | null>(null);
+  const [team, setTeam] = useState("");
+
+  if (!mode) {
+    return (
+      <Landing
+        onStart={(m, t) => {
+          setMode(m);
+          setTeam(t);
+        }}
       />
-    </div>
+    );
+  }
+  return (
+    <GameRoom
+      mode={mode}
+      teamName={team}
+      onExit={() => setMode(null)}
+    />
   );
 }
