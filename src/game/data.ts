@@ -100,6 +100,9 @@ export interface Round {
   goodConsequence: string;
   riskyConsequence: string;
   lesson: string;
+  goodImpact: string;
+  riskyImpact: string;
+  mcNote?: string;
   goodChanges: MetricChange;
   riskyChanges: MetricChange;
   goodNodes: Partial<Record<NodeId, NodeStatus>>;
@@ -111,52 +114,61 @@ export interface Round {
 export const ROUNDS: Round[] = [
   {
     index: 1,
-    title: "Email hóa đơn khẩn cấp",
+    title: "Email hóa đơn 'thân thiện nhưng hơi đáng ngờ'",
     time: "08:30",
     stage: "Email",
     riskLevel: "Trung bình",
     scenario:
-      "Nhân viên kế toán nhận email có tiêu đề 'Hóa đơn quá hạn - cần xử lý ngay'. File đính kèm là invoice.pdf.exe. Bạn sẽ làm gì?",
+      "Nhân viên kế toán nhận email: 'Chị ơi hóa đơn này quá hạn rồi, mở gấp giúp em trong 5 phút nha!!!' File đính kèm: HoaDon_Thang6.pdf.exe. Email nhìn có vẻ lịch sự, nhưng cái đuôi .exe thì đang cười rất nham hiểm.",
     options: [
-      { key: "A", text: "Mở file để kiểm tra nhanh", good: false },
-      { key: "B", text: "Chuyển tiếp cho đồng nghiệp", good: false },
+      { key: "A", text: "Mở file ngay vì người ta nói 'gấp'", good: false },
+      { key: "B", text: "Chuyển tiếp cho cả phòng để 'ai rảnh mở thử'", good: false },
       { key: "C", text: "Báo IT/Security kiểm tra", good: true },
-      { key: "D", text: "Tải file lên cloud cá nhân", good: false },
+      { key: "D", text: "Tải lên cloud cá nhân cho tiện", good: false },
     ],
     bestAnswer: "C",
     goodConsequence:
-      "Email đáng ngờ được báo cáo kịp thời. IT/Security kiểm tra và chặn các email tương tự.",
+      "Bạn đã báo IT/Security. Email bị chặn trước khi nó kịp biến phòng kế toán thành phòng karaoke buồn.",
     riskyConsequence:
-      "Mã độc được kích hoạt trên máy nhân viên. Cuộc tấn công bắt đầu.",
+      "Bạn mở file. Máy kế toán bị mã hóa. Tim nhân viên đập nhanh hơn tốc độ CPU, dữ liệu phòng tài chính bắt đầu bốc hơi.",
     lesson:
-      "Ransomware thường bắt đầu từ email phishing. Khi nghi ngờ, hãy báo đúng bộ phận.",
+      "Email càng hối thúc, càng phải bình tĩnh. File .pdf.exe không phải PDF, nó là cái bẫy đội lốt hóa đơn.",
+    goodImpact: "Bạn vừa cứu công ty khỏi một pha tự hủy.",
+    riskyImpact: "Máy kế toán đã bay màu nhẹ.",
+    mcNote:
+      "Nếu thấy file .pdf.exe mà vẫn mở, thì hôm nay chúng ta không chơi game nữa, chúng ta chơi cảm giác mạnh.",
     goodChanges: { defenderScore: 15, recoveryReadiness: 5 },
     riskyChanges: { businessImpact: 10, encryptedData: 5, customerTrust: -5 },
     goodNodes: { email: "safe", soc: "safe" },
-    riskyNodes: { employee: "infected", email: "suspicious" },
+    riskyNodes: { employee: "infected", email: "suspicious", finance: "suspicious" },
     spreadFrom: "email",
-    spreadTo: ["employee"],
+    spreadTo: ["employee", "finance"],
   },
   {
     index: 2,
-    title: "Máy tính có dấu hiệu lạ",
+    title: "Máy tính có biểu hiện tự lập quá mức",
     time: "09:00",
     stage: "Infection",
     riskLevel: "Cao",
     scenario:
-      "Máy nhân viên chạy chậm bất thường, xuất hiện cảnh báo lạ và nhiều file bắt đầu đổi tên.",
+      "Máy nhân viên bắt đầu chạy chậm, quạt hú như máy bay chuẩn bị cất cánh. Một số file đổi tên thành .locked. Màn hình chưa hiện đòi tiền, nhưng không khí đã bắt đầu có mùi 'toang'.",
     options: [
-      { key: "A", text: "Tiếp tục làm việc", good: false },
-      { key: "B", text: "Rút mạng / tắt Wi-Fi và báo IT", good: true },
-      { key: "C", text: "Cắm USB backup vào để copy dữ liệu", good: false },
-      { key: "D", text: "Tải phần mềm lạ trên mạng để sửa", good: false },
+      { key: "A", text: "Kệ, chắc máy tới tuổi nổi loạn", good: false },
+      { key: "B", text: "Rút mạng/tắt Wi-Fi và báo IT ngay", good: true },
+      { key: "C", text: "Cắm USB backup vào để copy dữ liệu gấp", good: false },
+      { key: "D", text: "Tải tool 'fix-ransomware-free-100%-real.exe'", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
-      "Máy nghi nhiễm được cô lập sớm. Ransomware bị hạn chế lan rộng.",
+      "Bạn cô lập máy kịp thời. Ransomware bị nhốt lại như nhân viên bị giữ ở phòng họp sau giờ làm.",
     riskyConsequence:
-      "Ransomware tiếp tục chạy và có nguy cơ lan sang hệ thống khác.",
-    lesson: "Cô lập sớm giúp ngăn ransomware lan sang hệ thống khác.",
+      "Bạn cắm USB backup vào. Ransomware nhìn USB như nhìn buffet miễn phí.",
+    lesson:
+      "Khi nghi nhiễm ransomware: rút mạng, báo IT. Đừng cắm thêm USB, đừng tải tool lạ, đừng tự làm bác sĩ Google.",
+    goodImpact: "Ransomware bị chặn trước cửa.",
+    riskyImpact: "Ransomware vừa mở tour du lịch nội bộ.",
+    mcNote:
+      "Một quyết định đúng lúc có thể cứu hàng trăm giờ khôi phục.",
     goodChanges: { defenderScore: 15, recoveryReadiness: 10, businessImpact: -5 },
     riskyChanges: {
       businessImpact: 15,
@@ -171,24 +183,27 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 3,
-    title: "Ransomware lan sang File Server",
+    title: "File Server bắt đầu đổi nghệ danh",
     time: "09:20",
     stage: "Spread",
     riskLevel: "Nghiêm trọng",
     scenario:
-      "File server xuất hiện nhiều file bị đổi đuôi .locked. Một số phòng ban không mở được dữ liệu.",
+      "File Server xuất hiện hàng loạt file: hop_dong.docx.locked, bao_cao.xlsx.locked, ke_hoach_quy3.pptx.locked. Cả công ty nhận ra: file vẫn còn đó, nhưng quyền mở file đã đi du lịch.",
     options: [
-      { key: "A", text: "Tắt toàn bộ hệ thống không cần kiểm tra", good: false },
-      { key: "B", text: "Cô lập máy nghi nhiễm và xác định phạm vi", good: true },
-      { key: "C", text: "Chờ thêm để xem có tự hết không", good: false },
-      { key: "D", text: "Chia sẻ tài khoản admin cho mọi người xử lý", good: false },
+      { key: "A", text: "Tắt đại toàn bộ hệ thống cho chắc", good: false },
+      { key: "B", text: "Cô lập máy nghi nhiễm và xác định phạm vi ảnh hưởng", good: true },
+      { key: "C", text: "Chờ thêm 30 phút xem có tự hết không", good: false },
+      { key: "D", text: "Chia sẻ tài khoản admin cho mọi người xử lý nhanh", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
-      "Đội xử lý sự cố khoanh vùng được phạm vi ảnh hưởng và ngăn lây lan thêm.",
+      "Đội IT/SOC khoanh vùng được sự cố. Ransomware bị chặn trước khi kịp đi tour toàn công ty.",
     riskyConsequence:
-      "Việc xử lý chậm hoặc sai cách khiến file server bị ảnh hưởng nặng hơn.",
-    lesson: "Ứng cứu sự cố cần bình tĩnh: xác định, cô lập, xử lý và khôi phục.",
+      "Tài khoản admin bị lạm dụng. Ransomware vừa được cấp quyền đi thẳng vào hệ thống lõi.",
+    lesson:
+      "Xử lý ransomware cần bình tĩnh: xác định phạm vi, cô lập, điều tra, rồi mới khôi phục. Làm loạn chỉ giúp hacker vui hơn.",
+    goodImpact: "SOC đã vào trận.",
+    riskyImpact: "File Server đổi nghề thành két sắt khóa trái.",
     goodChanges: { defenderScore: 15, recoveryReadiness: 10, downtimeHours: 1 },
     riskyChanges: {
       businessImpact: 20,
@@ -203,25 +218,29 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 4,
-    title: "Backup có nguy cơ bị mã hóa",
+    title: "Backup: vị cứu tinh hay đồng nạn nhân?",
     time: "09:45",
     stage: "Backup Risk",
     riskLevel: "Nghiêm trọng",
     scenario:
-      "Backup server vẫn đang kết nối với hệ thống chính. Nếu ransomware lan tới đây, khả năng khôi phục sẽ giảm mạnh.",
+      "Backup Server vẫn đang kết nối với hệ thống chính. Mọi người nói: 'Không sao đâu, mình có backup mà.' Hệ thống backup trực tuyến có nguy cơ bị lây nhiễm chéo. Phao cứu sinh cuối cùng của công ty đang bị đe dọa.",
     options: [
       { key: "A", text: "Kiểm tra và bảo vệ backup ngay", good: true },
-      { key: "B", text: "Bỏ qua vì backup luôn an toàn", good: false },
-      { key: "C", text: "Xóa backup cũ cho nhẹ hệ thống", good: false },
-      { key: "D", text: "Cho tất cả nhân viên truy cập backup", good: false },
+      { key: "B", text: "Bỏ qua vì backup sinh ra là để bất tử", good: false },
+      { key: "C", text: "Xóa bớt backup cũ cho nhẹ ổ cứng", good: false },
+      { key: "D", text: "Cho tất cả nhân viên quyền truy cập backup cho tiện", good: false },
     ],
     bestAnswer: "A",
     goodConsequence:
-      "Backup được kiểm tra, bảo vệ và tách khỏi vùng nguy hiểm.",
+      "Backup được bảo vệ kịp thời. Công ty còn đường lui. CEO thở ra nhẹ hơn 2kg áp lực.",
     riskyConsequence:
-      "Backup có nguy cơ bị mã hóa hoặc bị xóa, làm giảm khả năng phục hồi.",
+      "Backup cũng bị mã hóa. Câu 'có gì restore lại' chính thức được đưa vào viện bảo tàng những niềm tin ngây thơ.",
     lesson:
-      "Backup phải tách biệt, có versioning/offline và phải được kiểm tra khôi phục định kỳ.",
+      "Backup phải tách biệt, có versioning/offline và phải test restore. Backup chưa từng khôi phục thử chỉ là niềm tin có giao diện.",
+    goodImpact: "Backup vẫn sống. Hy vọng vẫn còn.",
+    riskyImpact: "Phao cứu sinh cuối cùng của công ty đang bị đe dọa.",
+    mcNote:
+      "Backup là phao cứu sinh. Nhưng phao để trong kho, chưa từng bơm thử, thì lúc chìm cũng hơi khó nói.",
     goodChanges: { defenderScore: 20, recoveryReadiness: 15 },
     riskyChanges: { backupHealth: -35, businessImpact: 20, recoveryReadiness: -20 },
     goodNodes: { backup: "safe" },
@@ -231,29 +250,27 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 5,
-    title: "Hacker yêu cầu tiền chuộc",
+    title: "Hacker đòi tiền, CEO bắt đầu nhìn phòng IT",
     time: "10:00",
-    stage: "Leadership",
+    stage: "Leadership Decision",
     riskLevel: "Nghiêm trọng",
     scenario:
-      "Hacker yêu cầu thanh toán để lấy khóa giải mã. Hệ thống bán hàng đang bị gián đoạn. Lãnh đạo cần quyết định bước tiếp theo.",
+      "Hacker gửi thông báo: 'Trả tiền để lấy lại dữ liệu.' Hệ thống bán hàng đứng hình. Khách hàng gọi liên tục. CEO hỏi một câu rất nhẹ nhàng: 'Ai giải thích giúp tôi chuyện này trong 30 giây?'",
     options: [
-      { key: "A", text: "Trả tiền ngay", good: false },
-      {
-        key: "B",
-        text: "Kích hoạt quy trình ứng cứu & kiểm tra backup",
-        good: true,
-      },
-      { key: "C", text: "Im lặng, không báo ai", good: false },
-      { key: "D", text: "Để nhân viên tự xử lý", good: false },
+      { key: "A", text: "Trả tiền ngay cho nhanh", good: false },
+      { key: "B", text: "Kích hoạt quy trình ứng cứu sự cố và kiểm tra backup", good: true },
+      { key: "C", text: "Im lặng, hy vọng hacker cũng nghỉ trưa", good: false },
+      { key: "D", text: "Để nhân viên tự xử lý vì 'ai bấm thì người đó chịu'", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
-      "Doanh nghiệp kích hoạt quy trình ứng cứu, kiểm tra backup và phối hợp truyền thông có kiểm soát.",
+      "Quy trình ứng cứu được kích hoạt. IT/SOC vào việc, lãnh đạo có thông tin, truyền thông chuẩn bị kịch bản. Công ty vẫn căng nhưng chưa vỡ trận.",
     riskyConsequence:
-      "Quyết định sai làm tăng thời gian gián đoạn, rủi ro uy tín và thiệt hại kinh doanh.",
+      "Bạn chọn im lặng. Tin đồn trong công ty lan nhanh hơn ransomware.",
     lesson:
-      "Trả tiền không đảm bảo lấy lại dữ liệu. Quy trình ứng cứu và backup mới là nền tảng phục hồi.",
+      "Trả tiền không đảm bảo lấy lại dữ liệu. Quy trình ứng cứu, backup và ra quyết định nhanh mới cứu doanh nghiệp.",
+    goodImpact: "CEO tạm thời chưa hỏi 'ai chịu trách nhiệm?'.",
+    riskyImpact: "CEO đã bước vào phòng. Nhiệt độ giảm 5 độ.",
     goodChanges: { defenderScore: 20, recoveryReadiness: 15, customerTrust: -5 },
     riskyChanges: {
       businessImpact: 25,
@@ -266,29 +283,27 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 6,
-    title: "Khách hàng bắt đầu phàn nàn",
+    title: "Khách hàng hỏi: Sao app không chạy?",
     time: "10:30",
     stage: "Communication",
     riskLevel: "Cao",
     scenario:
-      "Một số dịch vụ bị gián đoạn. Khách hàng gọi điện hỏi chuyện gì đang xảy ra.",
+      "Dịch vụ bị gián đoạn. Khách hàng bắt đầu nhắn: 'Sao tôi không đăng nhập được?', 'Dữ liệu của tôi có sao không?', 'Bên bạn ổn không vậy?' Đội truyền thông mở laptop, hít một hơi thật sâu.",
     options: [
-      { key: "A", text: "Không phản hồi gì", good: false },
-      { key: "B", text: "Đổ lỗi cho nhân viên", good: false },
-      {
-        key: "C",
-        text: "Thông báo minh bạch, ngắn gọn, có kiểm soát",
-        good: true,
-      },
-      { key: "D", text: "Đăng thông tin chưa xác minh lên mạng xã hội", good: false },
+      { key: "A", text: "Không phản hồi gì cho đỡ sai", good: false },
+      { key: "B", text: "Đổ lỗi cho 'sự cố kỹ thuật không xác định'", good: false },
+      { key: "C", text: "Chuẩn bị thông báo minh bạch, ngắn gọn, có kiểm soát", good: true },
+      { key: "D", text: "Đăng status: 'Hacker ghé chơi xíu, mọi người thông cảm'", good: false },
     ],
     bestAnswer: "C",
     goodConsequence:
-      "Thông tin được truyền đạt minh bạch và có kiểm soát, giúp giảm thiệt hại uy tín.",
+      "Thông báo được kiểm soát. Khách hàng chưa vui, nhưng ít nhất họ thấy công ty đang xử lý nghiêm túc.",
     riskyConsequence:
-      "Truyền thông kém khiến khách hàng mất niềm tin và khủng hoảng lan rộng.",
+      "Bạn đăng thông tin chưa xác minh. Khủng hoảng truyền thông mở thêm season 2.",
     lesson:
-      "Truyền thông khủng hoảng là một phần quan trọng trong ứng cứu ransomware.",
+      "Ransomware không chỉ là sự cố IT. Nó là khủng hoảng niềm tin, vận hành và truyền thông.",
+    goodImpact: "Khách hàng chưa vui, nhưng vẫn còn niềm tin.",
+    riskyImpact: "Tin đồn lan nhanh hơn gói tin mạng.",
     goodChanges: { defenderScore: 10, customerTrust: 5, reputationDamage: -5 },
     riskyChanges: { customerTrust: -20, reputationDamage: 20, businessImpact: 10 },
     goodNodes: { customers: "suspicious" },
@@ -296,29 +311,27 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 7,
-    title: "Khôi phục hệ thống",
+    title: "Khôi phục: không phải cứ bấm restore là xong",
     time: "11:30",
     stage: "Recovery",
     riskLevel: "Cao",
     scenario:
-      "Đội IT tìm thấy bản backup sạch trước thời điểm nhiễm. Cần quyết định bước tiếp theo.",
+      "IT tìm thấy một bản backup sạch. Cả phòng vui như bắt được Wi-Fi mạnh ở sân bay. Nhưng câu hỏi quan trọng là: khôi phục như thế nào để ransomware không quay lại?",
     options: [
-      { key: "A", text: "Khôi phục ngay lên hệ thống chưa làm sạch", good: false },
-      {
-        key: "B",
-        text: "Làm sạch môi trường, xác minh backup, khôi phục có kiểm soát",
-        good: true,
-      },
-      { key: "C", text: "Bỏ backup và tạo dữ liệu mới", good: false },
-      { key: "D", text: "Cho người dùng tự tải file về", good: false },
+      { key: "A", text: "Restore ngay lên hệ thống đang nhiễm cho nhanh", good: false },
+      { key: "B", text: "Làm sạch môi trường, xác minh backup, rồi khôi phục có kiểm soát", good: true },
+      { key: "C", text: "Gửi file backup cho từng nhân viên tự xử", good: false },
+      { key: "D", text: "Bỏ backup, nhập lại dữ liệu bằng niềm tin và Excel", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
-      "Môi trường được làm sạch, backup được xác minh và hệ thống khôi phục an toàn hơn.",
+      "Khôi phục có kiểm soát. File Server dần sống lại. Phòng kế toán bắt đầu tin vào ngày mai.",
     riskyConsequence:
-      "Khôi phục sai cách có thể khiến ransomware quay lại hoặc dữ liệu tiếp tục bị ảnh hưởng.",
+      "Bạn restore lên môi trường chưa sạch. Ransomware kích hoạt lại từ môi trường chưa làm sạch. Lần này, tốc độ phá hoại còn nhanh hơn.",
     lesson:
       "Khôi phục phải có kiểm soát. Nếu môi trường còn nhiễm, ransomware có thể quay lại.",
+    goodImpact: "File Server đang hồi sinh.",
+    riskyImpact: "Phòng IT bắt đầu uống cà phê không đường.",
     goodChanges: {
       defenderScore: 20,
       encryptedData: -10,
@@ -340,28 +353,27 @@ export const ROUNDS: Round[] = [
   },
   {
     index: 8,
-    title: "Bài học sau sự cố",
+    title: "Sau sự cố: họp rút kinh nghiệm hay họp cho có?",
     time: "Ngày hôm sau",
     stage: "Lessons Learned",
     riskLevel: "Thấp",
     scenario:
-      "Doanh nghiệp đã hoạt động trở lại. Lãnh đạo cần chọn ưu tiên đầu tư để giảm rủi ro lần sau.",
+      "Công ty hoạt động lại. Lãnh đạo hỏi: 'Làm sao để chuyện này không lặp lại?' Đây là lúc chọn giữa an toàn thật và slide PowerPoint rất đẹp nhưng không ai làm.",
     options: [
-      {
-        key: "A",
-        text: "Đào tạo nhân viên, MFA, backup an toàn, EDR & quy trình ứng cứu",
-        good: true,
-      },
-      { key: "B", text: "Chỉ mua thêm máy tính mới", good: false },
-      { key: "C", text: "Chỉ đổi mật khẩu một lần", good: false },
-      { key: "D", text: "Không làm gì vì sự cố đã qua", good: false },
+      { key: "A", text: "Đào tạo nhân viên, bật MFA, backup an toàn, EDR và quy trình ứng cứu", good: true },
+      { key: "B", text: "Chỉ đổi hình nền máy tính thành 'Đừng click linh tinh'", good: false },
+      { key: "C", text: "Chỉ đổi mật khẩu một lần rồi thôi", good: false },
+      { key: "D", text: "Không làm gì, vì hôm nay hệ thống chạy lại rồi", good: false },
     ],
     bestAnswer: "A",
     goodConsequence:
-      "Doanh nghiệp xây dựng chiến lược phòng thủ nhiều lớp, giảm rủi ro ransomware trong tương lai.",
+      "Doanh nghiệp xây dựng phòng thủ nhiều lớp. Không ai bất tử trước ransomware, nhưng công ty đã bớt 'mong manh dễ vỡ'.",
     riskyConsequence:
-      "Không rút kinh nghiệm khiến doanh nghiệp có nguy cơ bị tấn công lại.",
-    lesson: "Phòng chống ransomware cần kết hợp con người, quy trình và công nghệ.",
+      "Không cải thiện gì sau sự cố. Ransomware 2.0 đang đứng ngoài cửa, cầm hoa và lịch hẹn.",
+    lesson:
+      "Phòng chống ransomware cần kết hợp con người, quy trình và công nghệ. Không có một món đồ thần kỳ cứu được tất cả.",
+    goodImpact: "Công ty sống sót qua ngày thứ Hai.",
+    riskyImpact: "Ransomware 2.0 đang đặt lịch tái khám.",
     goodChanges: { defenderScore: 25, recoveryReadiness: 20, customerTrust: 10 },
     riskyChanges: {
       reputationDamage: 10,
@@ -394,11 +406,18 @@ export const TIMELINE_STAGES = [
 ];
 
 export const FINAL_LESSONS = [
-  "Không click link hoặc file lạ.",
-  "Báo IT/Security ngay khi nghi ngờ.",
-  "Bật MFA để giảm nguy cơ bị chiếm tài khoản.",
-  "Backup phải tách biệt, có versioning/offline và được kiểm tra khôi phục.",
-  "Ransomware là rủi ro kinh doanh, không chỉ là sự cố kỹ thuật.",
+  "Đừng click link hoặc file lạ, đặc biệt là file có mùi 'gấp lắm chị ơi'.",
+  "Nghi nhiễm ransomware thì rút mạng, báo IT/Security. Đừng tự làm bác sĩ Google.",
+  "Bật MFA để hacker có mật khẩu cũng chưa chắc vào được.",
+  "Backup phải tách biệt, có versioning/offline và phải test restore.",
+  "Ransomware không chỉ khóa dữ liệu. Nó khóa luôn doanh thu, vận hành, uy tín và niềm tin khách hàng.",
+];
+
+export const EVENT_MODE_NOTES = [
+  "Trò chơi này không dạy hack. Trò chơi này dạy cách không biến mình thành người mở cửa mời hacker vào.",
+  "Nếu thấy file .pdf.exe mà vẫn mở, thì hôm nay chúng ta không chơi game nữa, chúng ta chơi cảm giác mạnh.",
+  "Backup là phao cứu sinh. Nhưng phao để trong kho, chưa từng bơm thử, thì lúc chìm cũng hơi khó nói.",
+  "Một quyết định đúng lúc có thể cứu hàng trăm giờ khôi phục.",
 ];
 
 export type GameMode = "employee" | "leader" | "stage" | "default";
@@ -408,49 +427,110 @@ export interface GradeResult {
   message: string;
   tone: "excellent" | "good" | "warn" | "fail";
   badge: string;
+  badgeDescription: string;
 }
+
+const HIGH_BADGES = [
+  {
+    badge: "Excellent Defender",
+    badgeDescription: "Người đã cứu công ty trước khi CEO mở cuộc họp khẩn.",
+  },
+  {
+    badge: "Backup Hero",
+    badgeDescription: "Người hiểu rằng backup không test restore thì chỉ là niềm tin.",
+  },
+  {
+    badge: "Crisis Leader",
+    badgeDescription: "Bình tĩnh giữa bão ransomware, không đổ lỗi lung tung.",
+  },
+  {
+    badge: "Phishing Hunter",
+    badgeDescription: "Nhìn thấy .pdf.exe là biết có mùi drama.",
+  },
+  {
+    badge: "SOC Whisperer",
+    badgeDescription: "Người nghe tiếng log và hiểu hệ thống đang kêu cứu.",
+  },
+];
+
+const MEDIUM_BADGES = [
+  {
+    badge: "Good Recovery",
+    badgeDescription: "Có vài pha hú hồn, nhưng công ty vẫn sống.",
+  },
+  {
+    badge: "Almost Safe",
+    badgeDescription: "Suýt nữa thì cả phòng đi uống cà phê bắt buộc.",
+  },
+  {
+    badge: "Needs Improvement",
+    badgeDescription: "Bạn sống sót, nhưng backup đang nhìn bạn với ánh mắt thất vọng.",
+  },
+];
+
+const LOW_BADGES = [
+  {
+    badge: "Business Critical Failure",
+    badgeDescription: "Công ty không sập vì thiếu may mắn. Công ty sập vì chọn A hơi nhiều.",
+  },
+  {
+    badge: "High-Risk Recovery Case",
+    badgeDescription: "Quyết định chậm và thiếu kiểm soát khiến khủng hoảng leo thang nhanh.",
+  },
+  {
+    badge: "Click First, Think Later",
+    badgeDescription: "Một triết lý sống cần được cập nhật bản vá.",
+  },
+];
 
 export function gradeFinal(m: Metrics): GradeResult {
   if (m.encryptedData >= 70 || m.backupHealth <= 30) {
+    const badge = m.backupHealth <= 30 ? LOW_BADGES[1] : LOW_BADGES[0];
     return {
       grade: "Business Critical Failure",
       message:
-        "Doanh nghiệp bị ảnh hưởng nghiêm trọng. Backup yếu, xử lý chậm hoặc quyết định sai làm thiệt hại tăng cao.",
+        "Doanh nghiệp bị ảnh hưởng nghiêm trọng. Backup yếu. Phản ứng chậm. Khách hàng mất niềm tin. File Server đang nằm im như đang suy ngẫm về cuộc đời.",
       tone: "fail",
-      badge: "Needs Improvement",
+      ...badge,
     };
   }
   if (m.defenderScore >= 120 && m.encryptedData <= 20 && m.backupHealth >= 70) {
+    const badge =
+      m.backupHealth >= 90 ? HIGH_BADGES[1] : m.recoveryReadiness >= 90 ? HIGH_BADGES[2] : HIGH_BADGES[0];
     return {
       grade: "Excellent Defender",
       message:
-        "Bạn đã kiểm soát khủng hoảng rất tốt. Doanh nghiệp phục hồi nhanh và giảm thiểu thiệt hại.",
+        "Doanh nghiệp đã sống sót. Dữ liệu mất ít. Backup vẫn an toàn. Khách hàng còn niềm tin. CEO chưa cần mở cuộc họp lúc 7 giờ sáng.",
       tone: "excellent",
-      badge: "Excellent Defender",
+      ...badge,
     };
   }
   if (m.defenderScore >= 90 && m.encryptedData <= 40) {
+    const badge = m.backupHealth >= 80 ? HIGH_BADGES[1] : MEDIUM_BADGES[0];
     return {
       grade: "Good Recovery",
-      message: "Bạn xử lý khá tốt, nhưng vẫn còn một số điểm cần cải thiện.",
+      message:
+        "Doanh nghiệp vẫn phục hồi được, nhưng có vài khoảnh khắc khiến phòng IT muốn tắt thông báo điện thoại. Cần cải thiện backup, MFA và quy trình ứng cứu.",
       tone: "good",
-      badge: m.backupHealth >= 80 ? "Backup Hero" : "Crisis Leader",
+      ...badge,
     };
   }
   if (m.defenderScore >= 60) {
+    const badge = m.customerTrust >= 70 ? MEDIUM_BADGES[1] : MEDIUM_BADGES[2];
     return {
       grade: "Needs Improvement",
       message:
-        "Doanh nghiệp sống sót, nhưng thiệt hại còn cao. Cần cải thiện backup, quy trình và đào tạo.",
+        "Doanh nghiệp vẫn phục hồi được, nhưng có vài khoảnh khắc khiến phòng IT muốn tắt thông báo điện thoại. Cần cải thiện backup, MFA và quy trình ứng cứu.",
       tone: "warn",
-      badge: "Phishing Hunter",
+      ...badge,
     };
   }
+  const badge = m.defenderScore < 30 ? LOW_BADGES[2] : LOW_BADGES[0];
   return {
     grade: "Business Critical Failure",
     message:
-      "Doanh nghiệp bị ảnh hưởng nghiêm trọng. Cần đầu tư mạnh vào con người, quy trình và công nghệ.",
+      "Doanh nghiệp bị ảnh hưởng nghiêm trọng. Backup yếu. Phản ứng chậm. Khách hàng mất niềm tin. File Server đang nằm im như đang suy ngẫm về cuộc đời.",
     tone: "fail",
-    badge: "Needs Improvement",
+    ...badge,
   };
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   ShieldAlert,
@@ -19,53 +19,51 @@ interface Props {
 export function Landing({ onStart }: Props) {
   const [team, setTeam] = useState("");
 
-  const modes: { key: GameMode; label: string; desc: string; icon: React.ReactNode; tone: string }[] = [
+  const modes: { key: GameMode; label: string; desc: string; icon: ReactNode; tone: string }[] = [
     {
-      key: "default",
-      label: "Bắt đầu chơi",
-      desc: "Chế độ tiêu chuẩn cho người mới",
-      icon: <Play size={22} />,
+      key: "employee",
+      label: "Chế độ nhân viên",
+      desc: "Né bẫy phishing",
+      icon: <Bug size={22} />,
       tone: "gradient-neon",
     },
     {
       key: "leader",
       label: "Chế độ lãnh đạo",
-      desc: "Quyết định kinh doanh & ứng cứu sự cố",
+      desc: "Cứu doanh nghiệp khỏi khủng hoảng",
       icon: <Users2 size={22} />,
       tone: "gradient-safe",
     },
     {
-      key: "employee",
-      label: "Chế độ nhân viên",
-      desc: "Phishing, báo cáo & xử lý nghi ngờ",
-      icon: <Bug size={22} />,
-      tone: "bg-[oklch(0.7_0.22_295)]",
-    },
-    {
       key: "stage",
       label: "Chế độ sân khấu",
-      desc: "Layout lớn cho MC & sự kiện trực tiếp",
+      desc: "Chơi cùng khán giả và trao quà",
       icon: <Radio size={22} />,
       tone: "gradient-danger",
+    },
+    {
+      key: "default",
+      label: "Chế độ tiêu chuẩn",
+      desc: "8 quyết định trong một buổi sáng rất dài",
+      icon: <Play size={22} />,
+      tone: "bg-[oklch(0.78_0.18_230)]",
     },
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* ambient glows */}
-      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[oklch(0.5_0.25_25/0.15)] blur-3xl" />
-      <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[oklch(0.6_0.2_230/0.18)] blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden grid-bg">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,oklch(0.08_0.025_260/0.15),oklch(0.05_0.02_260/0.74))]" />
 
-      <div className="relative w-full max-w-4xl">
+      <div className="relative w-full max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 md:mb-12"
+          className="text-center mb-8 md:mb-10"
         >
           <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-5">
             <span className="h-2 w-2 rounded-full bg-neon-red animate-pulse" />
             <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-              Live Simulation · Mô phỏng an toàn
+              Live Simulation · Mô phỏng giáo dục an toàn
             </span>
           </div>
 
@@ -74,20 +72,18 @@ export function Landing({ onStart }: Props) {
             animate={{ scale: 1 }}
             className="font-display text-4xl md:text-7xl text-glow-blue leading-[1.05] mb-4"
           >
-            RANSOMWARE
+            Ransomware
             <br />
-            <span className="bg-gradient-to-r from-[oklch(0.7_0.25_25)] via-[oklch(0.85_0.18_50)] to-[oklch(0.78_0.18_230)] bg-clip-text text-transparent">
-              CRISIS ROOM
+            <span className="bg-gradient-to-r from-[oklch(0.7_0.25_25)] via-[oklch(0.85_0.18_80)] to-[oklch(0.78_0.18_230)] bg-clip-text text-transparent">
+              Crisis Room
             </span>
           </motion.h1>
 
-          <p className="text-lg md:text-2xl text-foreground/85 mb-3 max-w-2xl mx-auto">
-            Bạn có cứu được doanh nghiệp khỏi ransomware không?
+          <p className="text-lg md:text-2xl text-foreground/90 mb-3 max-w-3xl mx-auto">
+            Một cú click sai. Một backup chưa test. Một quyết định chậm. Và thế là cả công ty có một ngày thứ Hai rất dài.
           </p>
-          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Trò chơi mô phỏng khủng hoảng ransomware dành cho nhân viên, quản lý
-            và lãnh đạo. 8 vòng quyết định · Mã hóa, backup, truyền thông & phục
-            hồi.
+          <p className="text-sm md:text-lg text-muted-foreground max-w-3xl mx-auto">
+            Bạn có 8 quyết định để cứu doanh nghiệp khỏi ransomware. Chọn đúng, công ty phục hồi. Chọn sai, ransomware mở tour du lịch nội bộ.
           </p>
         </motion.div>
 
@@ -111,9 +107,9 @@ export function Landing({ onStart }: Props) {
               />
             </div>
           </div>
-          <div className="text-xs text-muted-foreground md:max-w-[240px]">
+          <div className="text-xs text-muted-foreground md:max-w-[280px]">
             <Sparkles size={12} className="inline text-neon-amber mr-1" />
-            Mẹo: nhập tên đội để xuất hiện trên báo cáo & badge cuối cùng.
+            Tên đội sẽ xuất hiện trên báo cáo cuối cùng và màn badge reveal.
           </div>
         </motion.div>
 
@@ -134,23 +130,25 @@ export function Landing({ onStart }: Props) {
                 <div className={`h-11 w-11 rounded-xl ${m.tone} flex items-center justify-center text-primary-foreground shadow-neon`}>
                   {m.icon}
                 </div>
-                <div className="font-display text-lg md:text-xl">{m.label}</div>
+                <div>
+                  <div className="font-display text-lg md:text-xl">{m.label}</div>
+                  <p className="text-sm text-muted-foreground">{m.desc}</p>
+                </div>
                 <ArrowRight
                   size={18}
                   className="ml-auto text-muted-foreground group-hover:text-neon-blue group-hover:translate-x-1 transition"
                 />
               </div>
-              <p className="text-sm text-muted-foreground">{m.desc}</p>
             </motion.button>
           ))}
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[10px] uppercase tracking-widest text-muted-foreground">
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-4 text-[10px] uppercase tracking-widest text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Lock size={11} /> Mock data · không chứa mã độc thật
+            <Lock size={11} /> Đây là mô phỏng giáo dục an toàn, không chứa mã độc hay hướng dẫn tấn công.
           </span>
           <span>·</span>
-          <span>Suitable for live events · 100% educational</span>
+          <span>Phù hợp cho awareness event và đào tạo nội bộ</span>
         </div>
       </div>
     </div>
