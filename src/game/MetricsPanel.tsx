@@ -37,10 +37,10 @@ interface MetricCardProps {
 }
 
 const LOWER_IS_BETTER_METRICS = [
-  "Tác động kinh doanh",
-  "Dữ liệu bị mã hóa",
+  "Thiệt hại công việc",
+  "Dữ liệu bị khóa",
   "Thời gian gián đoạn",
-  "Thiệt hại uy tín",
+  "Ảnh hưởng uy tín",
 ];
 
 function getTone(value: number, dangerDirection: "up" | "down") {
@@ -144,11 +144,11 @@ export function MetricsPanel({ metrics, prev, pulseKey }: Props) {
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-neon-red animate-pulse" />
             <h3 className="font-display uppercase text-sm tracking-widest text-foreground">
-              Business Impact Console
+              Bảng thiệt hại công việc
             </h3>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Chỉ số điều hành trong khủng hoảng ransomware
+            Chỉ số dễ hiểu trong khủng hoảng virus khóa dữ liệu
           </p>
         </div>
         <Activity className="text-neon-blue" size={22} />
@@ -159,7 +159,7 @@ export function MetricsPanel({ metrics, prev, pulseKey }: Props) {
           <Trophy className="text-neon-amber" size={28} />
           <div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Điểm phòng thủ
+              Điểm bảo vệ
             </div>
             <div className="font-display text-4xl text-glow-blue text-neon-blue tabular-nums">
               <AnimatedNumber value={metrics.defenderScore} />
@@ -171,21 +171,21 @@ export function MetricsPanel({ metrics, prev, pulseKey }: Props) {
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
         <MetricCard
           icon={<AlertTriangle size={18} />}
-          label="Tác động kinh doanh"
+          label="Thiệt hại công việc"
           value={metrics.businessImpact}
           previous={prev.businessImpact}
           suffix="%"
-          description="Mức ảnh hưởng vận hành"
+          description="Mức ảnh hưởng tới công việc"
           dangerDirection="up"
           pulseKey={pulseKey}
         />
         <MetricCard
           icon={<Database size={18} />}
-          label="Dữ liệu bị mã hóa"
+          label="Dữ liệu bị khóa"
           value={metrics.encryptedData}
           previous={prev.encryptedData}
           suffix="%"
-          description="Phạm vi dữ liệu khóa"
+          description="Phần dữ liệu không mở được"
           dangerDirection="up"
           pulseKey={pulseKey}
         />
@@ -212,7 +212,7 @@ export function MetricsPanel({ metrics, prev, pulseKey }: Props) {
         />
         <MetricCard
           icon={<TrendingDown size={18} />}
-          label="Thiệt hại uy tín"
+          label="Ảnh hưởng uy tín"
           value={metrics.reputationDamage}
           previous={prev.reputationDamage}
           suffix="%"
@@ -222,27 +222,27 @@ export function MetricsPanel({ metrics, prev, pulseKey }: Props) {
         />
         <MetricCard
           icon={<HardDrive size={18} />}
-          label="Sức khỏe backup"
+          label="An toàn bản sao dữ liệu"
           value={metrics.backupHealth}
           previous={prev.backupHealth}
           suffix="%"
-          description="Cơ hội khôi phục"
+          description="Cơ hội cứu dữ liệu"
           dangerDirection="down"
           pulseKey={pulseKey}
         />
         <MetricCard
           icon={<Wrench size={18} />}
-          label="Sẵn sàng khôi phục"
+          label="Khả năng khôi phục"
           value={metrics.recoveryReadiness}
           previous={prev.recoveryReadiness}
           suffix="%"
-          description="Mức sẵn sàng ứng cứu"
+          description="Mức sẵn sàng xử lý"
           dangerDirection="down"
           pulseKey={pulseKey}
         />
         <MetricCard
           icon={<TrendingUp size={18} />}
-          label="Điểm phòng thủ"
+          label="Điểm bảo vệ"
           value={metrics.defenderScore}
           previous={prev.defenderScore}
           description="Tổng điểm quyết định đúng"

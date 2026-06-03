@@ -13,14 +13,14 @@ interface Props {
 }
 
 const METRIC_LABELS: Record<keyof MetricChange, string> = {
-  businessImpact: "Tác động KD",
-  encryptedData: "Dữ liệu mã hóa",
+  businessImpact: "Thiệt hại công việc",
+  encryptedData: "Dữ liệu bị khóa",
   downtimeHours: "Gián đoạn",
   customerTrust: "Niềm tin KH",
-  reputationDamage: "Uy tín",
-  backupHealth: "Backup",
-  recoveryReadiness: "Khôi phục",
-  defenderScore: "Điểm phòng thủ",
+  reputationDamage: "Ảnh hưởng uy tín",
+  backupHealth: "An toàn bản sao",
+  recoveryReadiness: "Khả năng khôi phục",
+  defenderScore: "Điểm bảo vệ",
 };
 
 const POSITIVE_KEYS: (keyof MetricChange)[] = [

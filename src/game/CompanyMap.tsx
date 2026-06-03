@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import {
   Mail,
   Monitor,
@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Building2,
   Users,
+  Bug,
 } from "lucide-react";
 import type { NodeState, NodeStatus } from "@/game/data";
 import type { NodeId } from "@/game/data";
@@ -25,40 +26,39 @@ const ICONS: Record<string, ComponentType<{ size?: number; className?: string }>
 };
 
 const MAP_POSITIONS: Record<NodeId, { x: number; y: number }> = {
-  email: { x: 11, y: 31 },
-  employee: { x: 30, y: 22 },
-  finance: { x: 30, y: 44 },
-  fileserver: { x: 55, y: 31 },
-  backup: { x: 78, y: 31 },
-  soc: { x: 18, y: 76 },
-  ops: { x: 58, y: 74 },
-  customers: { x: 82, y: 74 },
+  email: { x: 34, y: 35 },
+  employee: { x: 49, y: 25 },
+  finance: { x: 49, y: 46 },
+  fileserver: { x: 64, y: 35 },
+  backup: { x: 69, y: 58 },
+  soc: { x: 14, y: 61 },
+  ops: { x: 45, y: 76 },
+  customers: { x: 63, y: 76 },
 };
+
+const HACKER_POSITION = { x: 88, y: 32 };
 
 const ZONES = [
   {
-    title: "Điểm vào & Nhân viên",
-    subtitle: "Email, người dùng, kế toán",
-    className: "left-[3%] top-[12%] h-[45%] w-[39%] border-neon-blue/25",
-    glow: "bg-[oklch(0.45_0.12_230/0.12)]",
+    title: "Phe phòng thủ",
+    subtitle: "Người chơi / Đội cứu hộ kỹ thuật",
+    className: "left-[3%] top-[18%] h-[70%] w-[21%] border-neon-blue/35",
+    glow: "bg-[oklch(0.45_0.14_230/0.16)]",
+    accent: "text-neon-blue",
   },
   {
-    title: "Hạ tầng lõi",
-    subtitle: "File Server, Backup Server",
-    className: "left-[46%] top-[12%] h-[40%] w-[48%] border-neon-amber/25",
+    title: "Doanh nghiệp mục tiêu",
+    subtitle: "Email, máy người dùng, dữ liệu, vận hành, khách hàng",
+    className: "left-[27%] top-[14%] h-[76%] w-[48%] border-neon-amber/28",
     glow: "bg-[oklch(0.55_0.14_80/0.1)]",
+    accent: "text-neon-amber",
   },
   {
-    title: "Đội phản ứng",
-    subtitle: "IT / SOC cô lập và khôi phục",
-    className: "left-[3%] top-[63%] h-[29%] w-[34%] border-neon-green/25",
-    glow: "bg-[oklch(0.55_0.16_145/0.09)]",
-  },
-  {
-    title: "Tác động kinh doanh",
-    subtitle: "Vận hành, khách hàng, niềm tin",
-    className: "left-[46%] top-[60%] h-[32%] w-[48%] border-neon-red/25",
-    glow: "bg-[oklch(0.56_0.18_25/0.1)]",
+    title: "Phe tấn công",
+    subtitle: "Hacker / Nguồn phát tán virus",
+    className: "left-[78%] top-[18%] h-[70%] w-[19%] border-neon-red/35",
+    glow: "bg-[oklch(0.56_0.2_25/0.14)]",
+    accent: "text-neon-red",
   },
 ];
 
@@ -146,8 +146,11 @@ const STATUS_STYLES: Record<
 interface Props {
   nodes: NodeState[];
   activeNodeIds?: NodeId[];
+  threatPulse?: { to: NodeId[]; intensity: "warning" | "danger" } | null;
   infectionPulse?: { from: NodeId; to: NodeId[] } | null;
   recoveryPulse?: { from: NodeId; to: NodeId[] } | null;
+  phaseTone?: "watch" | "danger" | "safe";
+  children?: ReactNode;
 }
 
 function isBad(status: NodeStatus) {
@@ -163,9 +166,25 @@ function lineTone(from: NodeState, to: NodeState, kind: "attack" | "response" | 
   return kind === "response" ? "responseBase" : "base";
 }
 
-export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recoveryPulse }: Props) {
+export function CompanyMap({
+  nodes,
+  activeNodeIds = [],
+  threatPulse,
+  infectionPulse,
+  recoveryPulse,
+  phaseTone = "watch",
+  children,
+}: Props) {
   const nodeById = (id: NodeId) => nodes.find((n) => n.id === id)!;
   const activeSet = new Set(activeNodeIds);
+  const infectionTargets = infectionPulse
+    ? infectionPulse.to.map((to) => ({ from: infectionPulse.from, to }))
+    : [];
+  const recoveryTargets = recoveryPulse
+    ? recoveryPulse.to.map((to) => ({ from: recoveryPulse.from, to }))
+    : [];
+  const threatTargets = threatPulse?.to ?? [];
+  const isThreatActive = threatTargets.length > 0;
 
   return (
     <div className="relative h-full min-h-[460px] w-full overflow-hidden rounded-3xl border border-neon-blue/25 bg-[oklch(0.12_0.035_260/0.78)] shadow-neon">
@@ -175,14 +194,14 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
       <div className="absolute left-4 right-4 top-4 z-20 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="font-display text-sm md:text-lg uppercase text-foreground">
-            Bản đồ khủng hoảng doanh nghiệp
+            Bản đồ chiến đấu: phòng thủ vs hacker
           </div>
           <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Email → endpoint → hạ tầng lõi → vận hành → khách hàng
+            Phe phòng thủ → doanh nghiệp mục tiêu ← phe tấn công
           </div>
         </div>
         <div className="rounded-full border border-neon-red/40 bg-[oklch(0.2_0.08_25/0.45)] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-neon-red">
-          Live incident view
+          Bản đồ trực tiếp
         </div>
       </div>
 
@@ -196,10 +215,50 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
             <div className="font-display text-sm md:text-base font-semibold uppercase tracking-widest text-foreground/80">
               {zone.title}
             </div>
-            <div className="mt-0.5 text-xs md:text-sm text-muted-foreground">{zone.subtitle}</div>
+            <div className={`mt-0.5 text-xs md:text-sm ${zone.accent}`}>{zone.subtitle}</div>
           </div>
         </div>
       ))}
+
+      <div className="absolute left-[4.5%] top-[29%] z-20 max-w-[18%] rounded-2xl border border-neon-blue/35 bg-[oklch(0.14_0.06_230/0.72)] p-3 text-neon-blue shadow-neon backdrop-blur-xl">
+        <div className="mb-2 grid h-12 w-12 place-items-center rounded-2xl border border-neon-blue/45 bg-[oklch(0.18_0.08_230/0.7)]">
+          <ShieldCheck size={26} />
+        </div>
+        <div className="font-display text-xs uppercase md:text-sm">Người chơi</div>
+        <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+          Lệnh phòng thủ xuất phát từ đây
+        </div>
+      </div>
+
+      <motion.div
+        className={`absolute left-[88%] top-[32%] z-20 max-w-[16%] -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-3 text-neon-red backdrop-blur-xl ${
+          isThreatActive
+            ? "border-neon-red bg-[oklch(0.18_0.1_25/0.78)] shadow-danger"
+            : "border-neon-red/35 bg-[oklch(0.14_0.06_25/0.58)]"
+        }`}
+        animate={{
+          scale: isThreatActive ? [1, 1.05, 1] : 1,
+          boxShadow: isThreatActive
+            ? [
+                "0 0 22px oklch(0.7 0.25 25 / 0.45)",
+                "0 0 44px oklch(0.7 0.25 25 / 0.78)",
+                "0 0 22px oklch(0.7 0.25 25 / 0.45)",
+              ]
+            : "0 0 14px oklch(0.7 0.25 25 / 0.22)",
+        }}
+        transition={{ duration: 1.2, repeat: isThreatActive ? Infinity : 0 }}
+      >
+        <div className="mb-2 grid h-14 w-14 place-items-center rounded-2xl border border-neon-red/55 bg-[oklch(0.2_0.12_25/0.72)]">
+          <Bug size={30} />
+        </div>
+        <div className="font-display text-xs uppercase md:text-sm">Hacker</div>
+        <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+          Nguồn phát tán virus
+        </div>
+        <div className="mt-3 rounded-xl border border-neon-red/35 bg-[oklch(0.1_0.06_25/0.6)] px-2 py-1 text-[10px] uppercase tracking-widest">
+          Đòi tiền chuộc
+        </div>
+      </motion.div>
 
       <svg className="absolute inset-0 z-10 h-full w-full" preserveAspectRatio="none">
         <defs>
@@ -225,8 +284,15 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
           const isRecoveryPulse =
             tone === "safe" ||
             (recoveryPulse?.from === from && recoveryPulse.to.includes(to));
+          const isActivePulse = activeSet.has(from) && activeSet.has(to);
           const stroke =
-            tone === "danger"
+            isActivePulse && phaseTone === "danger"
+              ? "oklch(0.7 0.25 25 / 0.72)"
+              : isActivePulse && phaseTone === "safe"
+              ? "oklch(0.82 0.22 145 / 0.72)"
+              : isActivePulse
+              ? "oklch(0.83 0.18 80 / 0.68)"
+              : tone === "danger"
               ? "oklch(0.7 0.25 25 / 0.72)"
               : tone === "safe"
               ? "oklch(0.82 0.22 145 / 0.75)"
@@ -249,18 +315,27 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
                 x2={`${b.x}%`}
                 y2={`${b.y}%`}
                 stroke={stroke}
-                strokeWidth={tone === "base" || tone === "responseBase" ? 1.5 : 2.8}
+                strokeWidth={
+                  isDangerPulse || isRecoveryPulse || isActivePulse
+                    ? 4
+                    : tone === "base" || tone === "responseBase"
+                    ? 1.5
+                    : 2.8
+                }
                 strokeDasharray={kind === "response" ? "7 7" : "0"}
+                className={isDangerPulse ? "animate-pulse" : undefined}
                 markerEnd={marker}
               />
-              {(isDangerPulse || isRecoveryPulse || tone === "response") && (
+              {(isDangerPulse || isRecoveryPulse || isActivePulse || tone === "response") && (
                 <motion.circle
-                  r={isDangerPulse ? 5.5 : 4.5}
+                  r={isDangerPulse || (isActivePulse && phaseTone === "danger") ? 5.5 : 4.5}
                   fill={
-                    isDangerPulse
+                    isDangerPulse || (isActivePulse && phaseTone === "danger")
                       ? "oklch(0.76 0.27 25)"
-                      : isRecoveryPulse
+                      : isRecoveryPulse || (isActivePulse && phaseTone === "safe")
                       ? "oklch(0.85 0.22 145)"
+                      : isActivePulse
+                      ? "oklch(0.9 0.18 80)"
                       : "oklch(0.78 0.18 230)"
                   }
                   initial={{ cx: `${a.x}%`, cy: `${a.y}%`, opacity: 0 }}
@@ -275,13 +350,127 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
                     repeatDelay: isDangerPulse ? 0.35 : 1.2,
                     ease: "easeInOut",
                   }}
-                  style={{ filter: `drop-shadow(0 0 10px ${isDangerPulse ? "#ff5b5b" : "#7cf0a8"})` }}
+                  style={{
+                    filter: `drop-shadow(0 0 10px ${
+                      isDangerPulse || phaseTone === "danger"
+                        ? "#ff5b5b"
+                        : isRecoveryPulse || phaseTone === "safe"
+                        ? "#7cf0a8"
+                        : "#ffd166"
+                    })`,
+                  }}
                 />
               )}
             </g>
           );
         })}
+        {threatTargets.map((to) => {
+          const target = MAP_POSITIONS[to];
+          return (
+            <g key={`hacker-line-${to}`}>
+              <line
+                x1={`${HACKER_POSITION.x}%`}
+                y1={`${HACKER_POSITION.y}%`}
+                x2={`${target.x}%`}
+                y2={`${target.y}%`}
+                stroke="oklch(0.7 0.25 25 / 0.68)"
+                strokeWidth={3}
+                strokeDasharray="9 8"
+                className="animate-pulse"
+                markerEnd="url(#arrow-red)"
+              />
+              <line
+                x1={`${HACKER_POSITION.x}%`}
+                y1={`${HACKER_POSITION.y}%`}
+                x2={`${target.x}%`}
+                y2={`${target.y}%`}
+                stroke="oklch(0.7 0.25 25 / 0.18)"
+                strokeWidth={12}
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        })}
       </svg>
+
+      <div className="pointer-events-none absolute inset-0 z-[25]">
+        {threatTargets.map((to) => {
+          const b = MAP_POSITIONS[to];
+          return (
+            <motion.div
+              key={`hacker-packet-${to}`}
+              className={`absolute grid h-12 w-12 place-items-center rounded-full border bg-[oklch(0.18_0.12_25/0.86)] text-neon-red shadow-danger ${
+                threatPulse?.intensity === "danger" ? "border-neon-red animate-shake" : "border-neon-amber/80"
+              }`}
+              initial={{
+                left: `${HACKER_POSITION.x}%`,
+                top: `${HACKER_POSITION.y}%`,
+                opacity: 0,
+                scale: 0.7,
+              }}
+              animate={{
+                left: [`${HACKER_POSITION.x}%`, `${b.x}%`],
+                top: [`${HACKER_POSITION.y}%`, `${b.y}%`],
+                opacity: [0, 1, 1, 0],
+                scale: [0.7, 1.18, 1, 0.86],
+                rotate: [0, -12, 12, 0],
+              }}
+              transition={{
+                duration: threatPulse?.intensity === "danger" ? 1.15 : 1.45,
+                repeat: Infinity,
+                repeatDelay: 0.28,
+                ease: "easeInOut",
+              }}
+              style={{ transform: "translate(-50%, -50%)" }}
+            >
+              <Bug size={26} />
+            </motion.div>
+          );
+        })}
+        {infectionTargets.map(({ from, to }) => {
+          const a = MAP_POSITIONS[from];
+          const b = MAP_POSITIONS[to];
+          return (
+            <motion.div
+              key={`bug-${from}-${to}`}
+              className="absolute grid h-9 w-9 place-items-center rounded-full border border-neon-red/70 bg-[oklch(0.18_0.12_25/0.82)] text-neon-red shadow-danger"
+              initial={{ left: `${a.x}%`, top: `${a.y}%`, opacity: 0, scale: 0.75 }}
+              animate={{
+                left: [`${a.x}%`, `${b.x}%`],
+                top: [`${a.y}%`, `${b.y}%`],
+                opacity: [0, 1, 1, 0],
+                scale: [0.75, 1.12, 1, 0.85],
+                rotate: [0, -10, 12, 0],
+              }}
+              transition={{ duration: 1.35, repeat: Infinity, repeatDelay: 0.32, ease: "easeInOut" }}
+              style={{ transform: "translate(-50%, -50%)" }}
+            >
+              <Bug size={20} />
+            </motion.div>
+          );
+        })}
+        {recoveryTargets.map(({ from, to }) => {
+          const a = MAP_POSITIONS[from];
+          const b = MAP_POSITIONS[to];
+          return (
+            <motion.div
+              key={`shield-${from}-${to}`}
+              className="absolute grid h-9 w-9 place-items-center rounded-full border border-neon-green/70 bg-[oklch(0.17_0.1_145/0.82)] text-neon-green shadow-safe"
+              initial={{ left: `${a.x}%`, top: `${a.y}%`, opacity: 0, scale: 0.75 }}
+              animate={{
+                left: [`${a.x}%`, `${b.x}%`],
+                top: [`${a.y}%`, `${b.y}%`],
+                opacity: [0, 1, 1, 0],
+                scale: [0.75, 1.08, 1, 0.9],
+              }}
+              transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 0.55, ease: "easeInOut" }}
+              style={{ transform: "translate(-50%, -50%)" }}
+            >
+              <ShieldCheck size={20} />
+            </motion.div>
+          );
+        })}
+      </div>
 
       <div className="absolute inset-0 z-20">
         {nodes.map((n) => {
@@ -303,13 +492,24 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
                 <motion.div
                   key={n.status}
                   initial={{ scale: 0.86 }}
-                  animate={{ scale: isActive ? [1, 1.08, 1] : 1 }}
-                  transition={{ duration: isActive ? 1.8 : 0.25, repeat: isActive ? Infinity : 0 }}
+                  animate={{
+                    scale: isActive ? [1, 1.1, 1] : 1,
+                    x: isActive && phaseTone === "danger" ? [0, -2, 2, -1, 1, 0] : 0,
+                  }}
+                  transition={{ duration: isActive ? 1.2 : 0.25, repeat: isActive ? Infinity : 0 }}
                   className={`relative flex h-16 w-16 items-center justify-center rounded-[1.35rem] backdrop-blur-md md:h-[78px] md:w-[78px] ${s.shell} ${s.ring} ${s.glow} ${s.pulse}`}
                   style={{ clipPath: "polygon(50% 0%, 92% 24%, 92% 76%, 50% 100%, 8% 76%, 8% 24%)" }}
                 >
                   {isActive && (
-                    <span className="absolute inset-[-10px] rounded-[1.8rem] border border-neon-blue/60 animate-pulse" />
+                    <span
+                      className={`absolute inset-[-12px] rounded-[1.8rem] border animate-pulse ${
+                        phaseTone === "danger"
+                          ? "border-neon-red/80 shadow-danger"
+                          : phaseTone === "safe"
+                          ? "border-neon-green/80 shadow-safe"
+                          : "border-neon-blue/60"
+                      }`}
+                    />
                   )}
                   {n.status === "isolated" && (
                     <span className="absolute inset-[-7px] rounded-[1.7rem] ring-2 ring-neon-blue/60 animate-pulse" />
@@ -327,6 +527,8 @@ export function CompanyMap({ nodes, activeNodeIds = [], infectionPulse, recovery
           );
         })}
       </div>
+
+      {children}
     </div>
   );
 }

@@ -7,13 +7,24 @@ interface Props {
   completedCount: number;
 }
 
+const STAGE_LABELS: Record<string, string> = {
+  Email: "Email lừa đảo",
+  Click: "Cú click sai",
+  Infection: "Máy bị nhiễm",
+  Spread: "Lây lan",
+  Encryption: "Dữ liệu bị khóa",
+  Response: "Xử lý khủng hoảng",
+  Recovery: "Khôi phục hoạt động",
+  "Lessons Learned": "Bài học",
+};
+
 export function Timeline({ currentStage, completedCount }: Props) {
   return (
     <div className="glass rounded-2xl p-3 md:p-4">
       <div className="flex items-center gap-2 mb-3">
         <div className="h-2 w-2 rounded-full bg-neon-blue animate-pulse" />
         <h3 className="font-display uppercase text-xs tracking-widest text-muted-foreground">
-          Dòng thời gian tấn công
+          Diễn biến sự cố
         </h3>
       </div>
       <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
@@ -48,7 +59,7 @@ export function Timeline({ currentStage, completedCount }: Props) {
                       : "text-muted-foreground"
                   }`}
                 >
-                  {stage}
+                  {STAGE_LABELS[stage] ?? stage}
                 </div>
               </div>
               {i < TIMELINE_STAGES.length - 1 && (

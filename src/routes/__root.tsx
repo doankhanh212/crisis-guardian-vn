@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Mô phỏng khủng hoảng ransomware dành cho sự kiện đào tạo an ninh mạng.",
+          "Mô phỏng khủng hoảng ransomware (virus khóa dữ liệu) dành cho sự kiện nâng cao nhận thức.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

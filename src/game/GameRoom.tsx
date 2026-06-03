@@ -1,28 +1,29 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  Clock,
-  Shield,
-  ShieldAlert,
-  AlertTriangle,
-  Radio,
-  Settings,
-  X,
-  Play,
-  Eye,
-  Zap,
-  ShieldCheck,
-  RotateCcw,
-  FileText,
   Award,
   Bug,
+  Clock,
+  Eye,
+  FileText,
+  Play,
+  Radio,
+  RotateCcw,
+  Settings,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
   Users2,
-  Activity,
+  X,
+  Zap,
 } from "lucide-react";
 import { CompanyMap } from "@/game/CompanyMap";
-import { MetricsPanel } from "@/game/MetricsPanel";
+import {
+  MapConsequenceOverlay,
+  MapPhaseStatus,
+  MapQuestionOverlay,
+} from "@/game/MapQuestionOverlay";
 import { Timeline } from "@/game/Timeline";
-import { FeedbackModal } from "@/game/FeedbackModal";
 import { FinalReport } from "@/game/FinalReport";
 import {
   EVENT_MODE_NOTES,
@@ -31,11 +32,11 @@ import {
   ROUNDS,
   gradeFinal,
   type GameMode,
+  type MetricChange,
   type Metrics,
   type NodeId,
   type NodeState,
   type NodeStatus,
-  type Round,
 } from "@/game/data";
 
 const MODE_LABELS: Record<GameMode, string> = {
@@ -44,6 +45,17 @@ const MODE_LABELS: Record<GameMode, string> = {
   leader: "Chế độ Lãnh đạo",
   stage: "Chế độ Sân khấu",
 };
+
+const PRE_QUESTION_WAIT_MS = 3000;
+const CONSEQUENCE_WAIT_MS = 5000;
+
+type UiPhase = "preQuestion" | "question" | "consequence";
+
+interface AnswerResult {
+  picked: "A" | "B" | "C" | "D";
+  isGood: boolean;
+  changes: MetricChange;
+}
 
 interface Props {
   mode: GameMode;
@@ -68,31 +80,28 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
 }
 
-const RISK_COLOR: Record<Round["riskLevel"], string> = {
-  Thấp: "text-neon-green border-neon-green/50 bg-[oklch(0.22_0.1_145/0.35)]",
-  "Trung bình": "text-neon-amber border-neon-amber/50 bg-[oklch(0.24_0.11_80/0.35)]",
-  Cao: "text-neon-amber border-neon-amber bg-[oklch(0.24_0.11_80/0.45)]",
-  "Nghiêm trọng": "text-neon-red border-neon-red bg-[oklch(0.24_0.14_25/0.42)] animate-pulse",
-};
-
 export function GameRoom({ mode, teamName, onExit }: Props) {
   const [roundIdx, setRoundIdx] = useState(0);
   const [metrics, setMetrics] = useState<Metrics>(INITIAL_METRICS);
   const [prevMetrics, setPrevMetrics] = useState<Metrics>(INITIAL_METRICS);
   const [pulseKey, setPulseKey] = useState(0);
   const [nodes, setNodes] = useState<NodeState[]>(INITIAL_NODES);
-  const [feedback, setFeedback] = useState<{
-    picked: "A" | "B" | "C" | "D";
-    isGood: boolean;
-  } | null>(null);
-  const [infectionPulse, setInfectionPulse] = useState<{ from: NodeId; to: NodeId[] } | null>(null);
-  const [recoveryPulse, setRecoveryPulse] = useState<{ from: NodeId; to: NodeId[] } | null>(null);
+  const [uiPhase, setUiPhase] = useState<UiPhase>("preQuestion");
+  const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
+  const [infectionPulse, setInfectionPulse] = useState<{ from: NodeId; to: NodeId[] } | null>(
+    null
+  );
+  const [recoveryPulse, setRecoveryPulse] = useState<{ from: NodeId; to: NodeId[] } | null>(
+    null
+  );
   const [seconds, setSeconds] = useState(15 * 60);
   const [hostOpen, setHostOpen] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [showVotes, setShowVotes] = useState(false);
   const [finished, setFinished] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const round = ROUNDS[roundIdx];
   const isStage = mode === "stage";
@@ -116,25 +125,80 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     return Array.from(ids);
   }, [round]);
 
+  const threatTargetIds = useMemo(() => {
+    const ids = new Set<NodeId>();
+    round.spreadTo?.forEach((id) => ids.add(id));
+    Object.keys(round.riskyNodes).forEach((id) => ids.add(id as NodeId));
+    if (ids.size === 0 && round.spreadFrom) ids.add(round.spreadFrom);
+    if (ids.size === 0) ids.add("ops");
+    return Array.from(ids);
+  }, [round]);
+
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setSeconds((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
+  useEffect(() => {
+    setUiPhase("preQuestion");
+    setAnswerResult(null);
+    setRevealed(false);
+    setShowVotes(false);
+    setInfectionPulse(null);
+    setRecoveryPulse(null);
+
+    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    phaseTimerRef.current = setTimeout(() => {
+      setUiPhase("question");
+    }, PRE_QUESTION_WAIT_MS);
+
+    return () => {
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    };
+  }, [roundIdx]);
+
+  useEffect(() => {
+    return () => {
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    };
+  }, []);
+
+  function advanceAfterConsequence() {
+    if (phaseTimerRef.current) {
+      clearTimeout(phaseTimerRef.current);
+      phaseTimerRef.current = null;
+    }
+    if (pulseTimerRef.current) {
+      clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = null;
+    }
+    setInfectionPulse(null);
+    setRecoveryPulse(null);
+
+    if (roundIdx + 1 >= ROUNDS.length) {
+      setFinished(true);
+    } else {
+      setRoundIdx((i) => i + 1);
+    }
+  }
+
   function pickOption(key: "A" | "B" | "C" | "D") {
-    if (feedback) return;
+    if (uiPhase !== "question" || answerResult) return;
+
     const opt = round.options.find((o) => o.key === key)!;
     const isGood = opt.good;
     const changes = isGood ? round.goodChanges : round.riskyChanges;
+    const targetNodes = isGood ? round.goodNodes : round.riskyNodes;
+
     setPrevMetrics(metrics);
     setMetrics((m) => applyMetrics(m, changes));
     setPulseKey((k) => k + 1);
-
-    const targetNodes = isGood ? round.goodNodes : round.riskyNodes;
     setNodes((ns) =>
       ns.map((n) => {
         const next = targetNodes[n.id];
@@ -142,20 +206,33 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
       })
     );
 
-    if (!isGood && round.spreadFrom && round.spreadTo) {
-      setInfectionPulse({ from: round.spreadFrom, to: round.spreadTo });
-      setTimeout(() => setInfectionPulse(null), 1500);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    if (isGood) {
+      const protectedNodes = Object.keys(round.goodNodes) as NodeId[];
+      setRecoveryPulse({
+        from: round.stage === "Recovery" ? "backup" : "soc",
+        to: protectedNodes.length > 0 ? protectedNodes : ["fileserver", "backup"],
+      });
+    } else {
+      setInfectionPulse({
+        from: round.spreadFrom ?? "email",
+        to: round.spreadTo && round.spreadTo.length > 0 ? round.spreadTo : ["ops", "customers"],
+      });
     }
-    if (isGood && round.stage === "Recovery") {
-      setRecoveryPulse({ from: "backup", to: ["fileserver", "ops"] });
-      setTimeout(() => setRecoveryPulse(null), 1500);
-    }
+    pulseTimerRef.current = setTimeout(() => {
+      setInfectionPulse(null);
+      setRecoveryPulse(null);
+    }, 5000);
 
-    setFeedback({ picked: key, isGood });
+    setAnswerResult({ picked: key, isGood, changes });
+    setUiPhase("consequence");
+
+    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    phaseTimerRef.current = setTimeout(advanceAfterConsequence, CONSEQUENCE_WAIT_MS);
   }
 
   useEffect(() => {
-    if (feedback || finished || hostOpen) return;
+    if (uiPhase !== "question" || answerResult || finished || hostOpen) return;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -168,7 +245,6 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
         return;
       }
 
-      const key = event.key.toLowerCase();
       const shortcutMap: Record<string, "A" | "B" | "C" | "D"> = {
         a: "A",
         b: "B",
@@ -179,7 +255,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
         "3": "C",
         "4": "D",
       };
-      const optionKey = shortcutMap[key];
+      const optionKey = shortcutMap[event.key.toLowerCase()];
       if (!optionKey || !round.options.some((option) => option.key === optionKey)) return;
 
       event.preventDefault();
@@ -188,33 +264,28 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [feedback, finished, hostOpen, round]);
-
-  function continueNext() {
-    setFeedback(null);
-    setRevealed(false);
-    setShowVotes(false);
-    if (roundIdx + 1 >= ROUNDS.length) {
-      setFinished(true);
-    } else {
-      setRoundIdx((i) => i + 1);
-    }
-  }
+  }, [answerResult, finished, hostOpen, round, uiPhase]);
 
   function restart() {
+    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
     setRoundIdx(0);
     setMetrics(INITIAL_METRICS);
     setPrevMetrics(INITIAL_METRICS);
     setNodes(INITIAL_NODES);
     setFinished(false);
-    setFeedback(null);
+    setAnswerResult(null);
+    setUiPhase("preQuestion");
+    setInfectionPulse(null);
+    setRecoveryPulse(null);
     setSeconds(15 * 60);
   }
 
   function triggerInfection() {
     if (round.spreadFrom && round.spreadTo) {
       setInfectionPulse({ from: round.spreadFrom, to: round.spreadTo });
-      setTimeout(() => setInfectionPulse(null), 1500);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = setTimeout(() => setInfectionPulse(null), 1500);
     }
   }
 
@@ -230,7 +301,8 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
 
   function triggerRecovery() {
     setRecoveryPulse({ from: "backup", to: ["fileserver", "ops"] });
-    setTimeout(() => {
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    pulseTimerRef.current = setTimeout(() => {
       setRecoveryPulse(null);
       setNodes((ns) =>
         ns.map((n) =>
@@ -258,7 +330,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
-  const completedCount = roundIdx;
+  const completedCount = uiPhase === "consequence" ? Math.min(roundIdx + 1, ROUNDS.length) : roundIdx;
   const currentStage = round.stage.includes("Email")
     ? "Email"
     : round.stage.includes("Infection")
@@ -277,6 +349,16 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
 
   const ModeIcon =
     mode === "leader" ? Users2 : mode === "employee" ? Bug : mode === "stage" ? Radio : Shield;
+  const mapActiveNodeIds =
+    uiPhase === "preQuestion"
+      ? Array.from(
+          new Set(
+            [round.spreadFrom, ...threatTargetIds].filter(
+              (id): id is NodeId => Boolean(id)
+            )
+          )
+        )
+      : activeNodeIds;
 
   return (
     <div className="relative min-h-screen overflow-hidden p-3 md:p-4">
@@ -288,7 +370,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
           <div className="flex items-center gap-3">
             <div className="relative">
               <ShieldAlert className="text-neon-red" size={28} />
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-neon-red animate-ping" />
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-neon-red animate-ping" />
             </div>
             <div>
               <h1 className="font-display text-base md:text-xl text-glow-blue">
@@ -300,19 +382,30 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
+            <MetricBadge label="Dữ liệu bị khóa" value={`${metrics.encryptedData}%`} tone="danger" />
+            <MetricBadge label="Bản sao an toàn" value={`${metrics.backupHealth}%`} tone="safe" />
+            <MetricBadge label="Niềm tin" value={`${metrics.customerTrust}%`} tone="blue" />
             <div className="glass rounded-xl px-3 py-1.5 flex items-center gap-2">
               <Clock size={16} className="text-neon-amber" />
-              <span className="font-display tabular-nums text-base md:text-lg">{mm}:{ss}</span>
+              <span className="font-display tabular-nums text-base md:text-lg">
+                {mm}:{ss}
+              </span>
             </div>
             <div className="glass rounded-xl px-3 py-1.5">
-              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Vòng</div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                Vòng
+              </div>
               <div className="font-display text-base md:text-lg text-neon-blue">
                 {round.index} <span className="text-muted-foreground text-xs">/ {ROUNDS.length}</span>
               </div>
             </div>
             <div className="glass rounded-xl px-3 py-1.5 hidden md:block">
-              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Điểm phòng thủ</div>
-              <div className="font-display text-base md:text-lg text-neon-green">{metrics.defenderScore}</div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                Điểm bảo vệ
+              </div>
+              <div className="font-display text-base md:text-lg text-neon-green">
+                {metrics.defenderScore}
+              </div>
             </div>
             {isStage && (
               <button
@@ -332,138 +425,75 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
         </header>
 
         <main className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-12 lg:auto-rows-min">
-          <motion.section
-            key={`briefing-${round.index}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="order-1 lg:order-3 lg:col-span-5 glass-strong rounded-2xl p-5 md:p-6 relative scanlines overflow-hidden"
-          >
-            <div className="absolute inset-x-0 top-0 h-1 gradient-danger opacity-70" />
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-2 text-xs font-display uppercase tracking-widest text-neon-blue">
-                <Activity size={14} /> Crisis Briefing
-              </span>
-              <span className="text-xs font-display uppercase tracking-widest text-muted-foreground">
-                {round.time} · {round.stage}
-              </span>
-              <span
-                className={`text-[10px] uppercase tracking-widest border rounded-full px-2 py-0.5 ${RISK_COLOR[round.riskLevel]}`}
-              >
-                <AlertTriangle size={10} className="inline mr-1" />
-                Rủi ro: {round.riskLevel}
-              </span>
-            </div>
-            <h2 className={`font-display ${isStage ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl"} text-glow-blue leading-tight mb-4`}>
-              {round.title}
-            </h2>
-            <p className={`${isStage ? "text-lg md:text-xl" : "text-base md:text-lg"} text-foreground/90 leading-relaxed`}>
-              {round.scenario}
-            </p>
-          </motion.section>
-
-          <section className="order-2 lg:order-1 lg:col-span-8 min-h-[460px] md:min-h-[560px] xl:min-h-[640px]">
+          <section className="order-1 min-h-[620px] md:min-h-[720px] xl:min-h-[calc(100vh-12rem)] lg:col-span-12">
             <CompanyMap
               nodes={nodes}
-              activeNodeIds={activeNodeIds}
+              activeNodeIds={mapActiveNodeIds}
+              threatPulse={
+                uiPhase === "preQuestion"
+                  ? { to: threatTargetIds, intensity: "warning" }
+                  : uiPhase === "consequence" && answerResult && !answerResult.isGood
+                  ? { to: threatTargetIds, intensity: "danger" }
+                  : null
+              }
               infectionPulse={infectionPulse}
               recoveryPulse={recoveryPulse}
-            />
+              phaseTone={
+                uiPhase === "preQuestion"
+                  ? "danger"
+                  : uiPhase === "consequence"
+                  ? answerResult?.isGood
+                    ? "safe"
+                    : "danger"
+                  : "watch"
+              }
+            >
+              <AnimatePresence mode="wait">
+                {uiPhase === "preQuestion" && (
+                  <MapPhaseStatus
+                    key={`pre-${round.index}`}
+                    round={round}
+                    uiPhase={uiPhase}
+                  />
+                )}
+                {uiPhase === "question" && (
+                  <MapQuestionOverlay
+                    key={`question-${round.index}`}
+                    round={round}
+                    isStage={isStage}
+                    showVotes={showVotes}
+                    revealed={revealed}
+                    votes={votes}
+                    onPick={pickOption}
+                  />
+                )}
+                {uiPhase === "consequence" && answerResult && (
+                  <>
+                    <MapPhaseStatus
+                      key={`status-${round.index}-${answerResult.picked}`}
+                      round={round}
+                      uiPhase={uiPhase}
+                    />
+                    <MapConsequenceOverlay
+                      key={`result-${round.index}-${answerResult.picked}`}
+                      round={round}
+                      picked={answerResult.picked}
+                      isGood={answerResult.isGood}
+                      changes={answerResult.changes}
+                      isLastRound={roundIdx + 1 >= ROUNDS.length}
+                      onContinue={advanceAfterConsequence}
+                    />
+                  </>
+                )}
+              </AnimatePresence>
+            </CompanyMap>
           </section>
 
-          <aside className="order-3 lg:order-2 lg:col-span-4">
-            <MetricsPanel metrics={metrics} prev={prevMetrics} pulseKey={pulseKey} />
-          </aside>
-
-          <motion.section
-            key={`decisions-${round.index}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="order-4 lg:col-span-7 glass-strong rounded-2xl p-4 md:p-5"
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Quyết định của phòng khủng hoảng
-                </div>
-                <div className="font-display text-lg text-foreground">
-                  Chọn hướng xử lý
-                </div>
-              </div>
-              {showVotes && (
-                <div className="rounded-full border border-neon-blue/40 px-3 py-1 text-[10px] uppercase tracking-widest text-neon-blue">
-                  Đang hiện vote
-                </div>
-              )}
-            </div>
-            <div className={`grid gap-3 ${isStage ? "md:grid-cols-2" : "md:grid-cols-2"}`}>
-              {round.options.map((opt) => {
-                const showCorrect = revealed && opt.good;
-                const showWrong = revealed && !opt.good;
-                const voteIndex = round.options.indexOf(opt);
-                return (
-                  <motion.button
-                    key={opt.key}
-                    whileHover={{ y: -3, scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={!!feedback}
-                    onClick={() => pickOption(opt.key)}
-                    className={`group text-left p-4 md:p-5 rounded-2xl glass border transition-all relative overflow-hidden min-h-[112px] ${
-                      showCorrect
-                        ? "border-neon-green shadow-safe bg-[oklch(0.23_0.11_145/0.55)]"
-                        : showWrong
-                        ? "border-neon-red/50 opacity-55 bg-[oklch(0.2_0.09_25/0.45)]"
-                        : "border-[oklch(0.6_0.1_230/0.25)] hover:border-neon-blue hover:shadow-neon"
-                    } ${feedback ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent opacity-0 transition group-hover:opacity-100" />
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`font-display text-3xl md:text-4xl w-12 flex-shrink-0 ${
-                          showCorrect ? "text-neon-green" : "text-neon-blue"
-                        }`}
-                      >
-                        {opt.key}
-                      </div>
-                      <div className={`${isStage ? "text-base md:text-lg" : "text-sm md:text-base"} pt-1 text-foreground/90 leading-relaxed`}>
-                        {opt.text}
-                        {showVotes && (
-                          <div className="mt-3 h-2 rounded-full bg-[oklch(0.2_0.03_260/0.8)] overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${votes[voteIndex]}%` }}
-                              className="h-full gradient-neon"
-                            />
-                          </div>
-                        )}
-                        {showVotes && (
-                          <div className="text-[10px] mt-1 text-muted-foreground">
-                            {votes[voteIndex]}% bình chọn
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.section>
-
-          <div className="order-5 lg:col-span-12">
+          <div className="order-2 lg:col-span-12">
             <Timeline currentStage={currentStage} completedCount={completedCount} />
           </div>
         </main>
       </div>
-
-      {feedback && (
-        <FeedbackModal
-          open={!!feedback}
-          round={round}
-          picked={feedback.picked}
-          isGood={feedback.isGood}
-          changes={feedback.isGood ? round.goodChanges : round.riskyChanges}
-          onContinue={continueNext}
-        />
-      )}
 
       <AnimatePresence>
         {hostOpen && (
@@ -484,21 +514,52 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Radio className="text-neon-blue" />
-                  <h3 className="font-display text-xl">Host Control Panel</h3>
+                  <h3 className="font-display text-xl">Bảng điều khiển host</h3>
                 </div>
-                <button onClick={() => setHostOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <button
+                  onClick={() => setHostOpen(false)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   <X />
                 </button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-                <HostBtn icon={<Play size={18} />} label="Bắt đầu vòng" onClick={() => setShowVotes(true)} />
-                <HostBtn icon={<Eye size={18} />} label="Hiện đáp án" onClick={() => setRevealed(true)} />
-                <HostBtn icon={<Users2 size={18} />} label="Hiện vote khán giả" onClick={() => setShowVotes(true)} />
+                <HostBtn
+                  icon={<Play size={18} />}
+                  label="Bắt đầu vòng"
+                  onClick={() => setUiPhase("question")}
+                />
+                <HostBtn
+                  icon={<Eye size={18} />}
+                  label="Hiện đáp án"
+                  onClick={() => setRevealed(true)}
+                />
+                <HostBtn
+                  icon={<Users2 size={18} />}
+                  label="Hiện vote khán giả"
+                  onClick={() => setShowVotes(true)}
+                />
                 <HostBtn icon={<Zap size={18} />} label="Trigger lây nhiễm" onClick={triggerInfection} />
-                <HostBtn icon={<ShieldCheck size={18} />} label="Cô lập máy nhiễm" onClick={triggerIsolation} />
-                <HostBtn icon={<ShieldCheck size={18} />} label="Khôi phục backup" onClick={triggerRecovery} />
-                <HostBtn icon={<FileText size={18} />} label="Báo cáo cuối" onClick={() => setFinished(true)} />
-                <HostBtn icon={<Award size={18} />} label="Hiện badge" onClick={() => setFinished(true)} />
+                <HostBtn
+                  icon={<ShieldCheck size={18} />}
+                  label="Cô lập máy nhiễm"
+                  onClick={triggerIsolation}
+                />
+                <HostBtn
+                  icon={<ShieldCheck size={18} />}
+                  label="Khôi phục bản sao"
+                  onClick={triggerRecovery}
+                />
+                <HostBtn
+                  icon={<FileText size={18} />}
+                  label="Báo cáo cuối"
+                  onClick={() => setFinished(true)}
+                />
+                <HostBtn
+                  icon={<Award size={18} />}
+                  label="Hiện badge"
+                  onClick={() => setFinished(true)}
+                />
                 <HostBtn icon={<RotateCcw size={18} />} label="Reset game" onClick={restart} />
               </div>
               <div className="rounded-2xl border border-neon-blue/25 bg-[oklch(0.18_0.05_260/0.55)] p-4">
@@ -531,5 +592,29 @@ function HostBtn({ icon, label, onClick }: { icon: ReactNode; label: string; onC
       <span className="text-neon-blue">{icon}</span>
       <span className="text-sm">{label}</span>
     </button>
+  );
+}
+
+function MetricBadge({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "blue" | "safe" | "danger";
+}) {
+  const toneClass =
+    tone === "safe"
+      ? "border-neon-green/35 text-neon-green"
+      : tone === "danger"
+      ? "border-neon-red/35 text-neon-red"
+      : "border-neon-blue/35 text-neon-blue";
+
+  return (
+    <div className={`hidden rounded-xl border bg-[oklch(0.14_0.04_260/0.55)] px-3 py-1.5 md:block ${toneClass}`}>
+      <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="font-display text-base tabular-nums">{value}</div>
+    </div>
   );
 }

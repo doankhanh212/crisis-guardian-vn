@@ -7,17 +7,17 @@ import type { GameMode } from "@/game/data";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ransomware Crisis Room — Mô phỏng khủng hoảng an ninh mạng" },
+      { title: "Ransomware Crisis Room — Mô phỏng khủng hoảng virus khóa dữ liệu" },
       {
         name: "description",
         content:
-          "Trò chơi mô phỏng khủng hoảng ransomware dành cho nhân viên, quản lý và lãnh đạo. 8 vòng quyết định an toàn, giáo dục và đầy kịch tính.",
+          "Trò chơi mô phỏng khủng hoảng ransomware (virus khóa dữ liệu) dành cho nhân viên, sinh viên, quản lý và lãnh đạo. 8 quyết định để cứu dữ liệu, công việc và niềm tin khách hàng.",
       },
       { property: "og:title", content: "Ransomware Crisis Room" },
       {
         property: "og:description",
         content:
-          "Bạn có cứu được doanh nghiệp khỏi ransomware không? Trò chơi mô phỏng an toàn dành cho sự kiện đào tạo an ninh mạng.",
+          "Bạn có cứu được doanh nghiệp khỏi ransomware (virus khóa dữ liệu) không? Trò chơi mô phỏng an toàn, dễ hiểu cho sự kiện nâng cao nhận thức.",
       },
     ],
   }),

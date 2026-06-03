@@ -81,27 +81,27 @@ export function FinalReport({ metrics, result, teamName, onRestart }: Props) {
 
   const whatWentRight: string[] = [];
   const whatWentWrong: string[] = [];
-  if (metrics.defenderScore >= 90) whatWentRight.push("Các quyết định đúng lúc giúp Defender Score tăng mạnh.");
-  if (metrics.backupHealth >= 70) whatWentRight.push("Backup còn đủ khỏe để làm phao cứu sinh.");
+  if (metrics.defenderScore >= 90) whatWentRight.push("Các quyết định đúng lúc giúp điểm bảo vệ tăng mạnh.");
+  if (metrics.backupHealth >= 70) whatWentRight.push("Bản sao dữ liệu cứu hộ còn đủ khỏe để làm phao cứu sinh.");
   if (metrics.customerTrust >= 70) whatWentRight.push("Khách hàng chưa vui, nhưng vẫn còn niềm tin.");
-  if (metrics.encryptedData <= 30) whatWentRight.push("Phạm vi mã hóa được hạn chế trước khi lan rộng.");
+  if (metrics.encryptedData <= 30) whatWentRight.push("Phạm vi dữ liệu bị khóa được hạn chế trước khi lan rộng.");
   if (whatWentRight.length === 0) whatWentRight.push("Doanh nghiệp vẫn còn cơ hội phục hồi nếu hành động ngay.");
 
-  if (metrics.encryptedData > 30) whatWentWrong.push("Một phần lớn dữ liệu bị mã hóa, file server có một buổi sáng không vui.");
-  if (metrics.backupHealth < 70) whatWentWrong.push("Backup bị ảnh hưởng hoặc chưa được bảo vệ đúng cách.");
+  if (metrics.encryptedData > 30) whatWentWrong.push("Một phần lớn dữ liệu bị khóa, kho dữ liệu công ty chính thức đình công.");
+  if (metrics.backupHealth < 70) whatWentWrong.push("Bản sao dữ liệu cứu hộ bị ảnh hưởng hoặc chưa được bảo vệ đúng cách.");
   if (metrics.customerTrust < 70) whatWentWrong.push("Niềm tin khách hàng suy giảm, đội truyền thông bắt đầu tăng nhịp tim.");
   if (metrics.downtimeHours >= 4) whatWentWrong.push("Thời gian ngừng hoạt động kéo dài, tác động kinh doanh tăng rõ rệt.");
-  if (whatWentWrong.length === 0) whatWentWrong.push("Không có vấn đề nghiêm trọng được ghi nhận. Phòng IT được uống cà phê bình thường.");
+  if (whatWentWrong.length === 0) whatWentWrong.push("Không có sự cố nghiêm trọng. Đội cứu hộ kỹ thuật được uống cà phê có đường.");
 
   const summaryCards = [
-    ["Điểm phòng thủ", metrics.defenderScore, ""],
-    ["Dữ liệu bị mã hóa", metrics.encryptedData, "%"],
+    ["Điểm bảo vệ", metrics.defenderScore, ""],
+    ["Dữ liệu bị khóa", metrics.encryptedData, "%"],
     ["Thời gian gián đoạn", metrics.downtimeHours, "h"],
     ["Niềm tin khách hàng", metrics.customerTrust, "%"],
-    ["Sức khỏe backup", metrics.backupHealth, "%"],
-    ["Sẵn sàng khôi phục", metrics.recoveryReadiness, "%"],
-    ["Tác động kinh doanh", metrics.businessImpact, "%"],
-    ["Thiệt hại uy tín", metrics.reputationDamage, "%"],
+    ["An toàn bản sao dữ liệu", metrics.backupHealth, "%"],
+    ["Khả năng khôi phục", metrics.recoveryReadiness, "%"],
+    ["Thiệt hại công việc", metrics.businessImpact, "%"],
+    ["Ảnh hưởng uy tín", metrics.reputationDamage, "%"],
   ];
 
   return (
@@ -124,7 +124,7 @@ export function FinalReport({ metrics, result, teamName, onRestart }: Props) {
             </h1>
           </div>
           <div className="rounded-full border border-neon-blue/35 bg-[oklch(0.18_0.06_230/0.45)] px-4 py-2 text-xs uppercase tracking-widest text-neon-blue">
-            Executive Incident Report
+            Báo cáo khủng hoảng cuối cùng
           </div>
         </motion.div>
 
@@ -140,7 +140,7 @@ export function FinalReport({ metrics, result, teamName, onRestart }: Props) {
               {tone.icon}
             </div>
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">
-              Badge Reveal · {tone.label}
+              Huy hiệu kết quả · {tone.label}
             </div>
             <h2 className={`font-display text-4xl md:text-6xl leading-tight mb-3 ${tone.text}`}>
               {result.badge}
