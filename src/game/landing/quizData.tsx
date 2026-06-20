@@ -30,7 +30,7 @@ export const HQG_QUIZ: QuizQuestion[] = [
         text: "Giải pháp công nghệ, hạ tầng CNTT, cloud và bảo mật",
         icon: <Cloud size={22} />,
       },
-      { key: "D", text: "Mở lớp dạy nhảy TikTok cho server", icon: <Disc3 size={22} /> },
+      { key: "D", text: "Mở lớp dạy nhảy TikTok ", icon: <Disc3 size={22} /> },
     ],
   },
   {
@@ -56,8 +56,8 @@ export const HQG_QUIZ: QuizQuestion[] = [
     options: [
       { key: "A", text: "Mới mở hôm qua", icon: <Sparkles size={22} /> },
       { key: "B", text: "Hơn 15 năm", icon: <Trophy size={22} /> },
-      { key: "C", text: "Từ thời Internet quay số ồn như máy xay sinh tố", icon: <Server size={22} /> },
-      { key: "D", text: "Từ lúc server còn biết tự buồn", icon: <Cloud size={22} /> },
+      { key: "C", text: "Thời kỳ đồ đá", icon: <Server size={22} /> },
+      { key: "D", text: "Đang bán cơm sườn , mai mở", icon: <Cloud size={22} /> },
     ],
   },
 ];

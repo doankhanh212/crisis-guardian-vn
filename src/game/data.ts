@@ -373,7 +373,7 @@ export const ROUNDS: Round[] = [
     lesson:
       "Phòng chống virus khóa dữ liệu (ransomware) cần kết hợp con người, quy trình và công nghệ. Không có một món đồ thần kỳ cứu được tất cả.",
     goodImpact: "Công ty sống sót qua ngày thứ Hai.",
-    riskyImpact: "Ransomware 2.0 đã đặt lịch tái khám.",
+    riskyImpact: "Hacker lên kế hoạch gửi báo giá lần 2",
     goodChanges: { defenderScore: 25, recoveryReadiness: 20, customerTrust: 10 },
     riskyChanges: {
       reputationDamage: 10,
