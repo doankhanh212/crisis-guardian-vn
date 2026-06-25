@@ -1,15 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// Saves participant info entered on the landing form into an Excel file.
-// The .handler body runs server-only, so node:fs / node:path and the xlsx
-// library are tree-shaken from the client bundle.
+// Lưu thông tin người chơi vào Google Sheet (Google Drive) thông qua một
+// Google Apps Script Web App. Server function chỉ gửi 1 request POST nên
+// chạy được cả khi dev lẫn trên Vercel/serverless (không cần ghi ổ đĩa).
 //
-// Each submission is appended as a new row to data/participants.xlsx
-// (relative to the server working directory). The file is created on the
-// first submission. NOTE: this writes to the local filesystem, so it works
-// on Node-based hosting and in dev, but not on edge runtimes like
-// Cloudflare Workers.
+// Cấu hình: đặt URL của web app vào biến môi trường SHEETS_WEBAPP_URL
+//   - Local: thêm dòng SHEETS_WEBAPP_URL=... vào file .env
+//   - Vercel: Project Settings → Environment Variables
+// Mã Apps Script và hướng dẫn deploy nằm ở scripts/google-apps-script.gs
 
 const participantSchema = z.object({
   playerName: z.string().trim().min(1, "Tên người chơi là bắt buộc"),
@@ -17,55 +16,38 @@ const participantSchema = z.object({
   phone: z.string().trim().optional().default(""),
 });
 
-interface ParticipantRow {
-  "Họ tên": string;
-  "Công ty": string;
-  "Số điện thoại": string;
-  "Thời gian": string;
-}
-
 export const saveParticipant = createServerFn({ method: "POST" })
   .inputValidator(participantSchema)
   .handler(async ({ data }) => {
-    const { promises: fs } = await import("node:fs");
-    const path = await import("node:path");
-    const XLSX = await import("xlsx");
-
-    const dir = path.resolve(process.cwd(), "data");
-    const filePath = path.join(dir, "participants.xlsx");
-    const sheetName = "NguoiThamGia";
-
-    await fs.mkdir(dir, { recursive: true });
-
-    // Load existing rows (if the file already exists) so we append instead
-    // of overwriting previous submissions.
-    let rows: ParticipantRow[] = [];
-    try {
-      const existing = await fs.readFile(filePath);
-      const wb = XLSX.read(existing, { type: "buffer" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      if (ws) {
-        rows = XLSX.utils.sheet_to_json<ParticipantRow>(ws);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    const webAppUrl = process.env.SHEETS_WEBAPP_URL;
+    if (!webAppUrl) {
+      console.warn(
+        "SHEETS_WEBAPP_URL chưa được cấu hình — bỏ qua việc lưu vào Google Sheet."
+      );
+      return { saved: false as const, reason: "not-configured" as const };
     }
 
-    rows.push({
-      "Họ tên": data.playerName,
-      "Công ty": data.company,
-      "Số điện thoại": data.phone,
-      "Thời gian": new Date().toLocaleString("vi-VN"),
+    const payload = {
+      playerName: data.playerName,
+      company: data.company,
+      phone: data.phone,
+      timestamp: new Date().toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
+    };
+
+    // Apps Script web app trả về 302 chuyển hướng sang googleusercontent để
+    // lấy nội dung phản hồi — fetch tự follow redirect nên vẫn nhận được kết quả.
+    const response = await fetch(webAppUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      redirect: "follow",
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet["!cols"] = [{ wch: 24 }, { wch: 24 }, { wch: 16 }, { wch: 22 }];
+    if (!response.ok) {
+      throw new Error(`Google Sheet trả về HTTP ${response.status}`);
+    }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-
-    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-    await fs.writeFile(filePath, buffer);
-
-    return { saved: true, total: rows.length };
+    return { saved: true as const };
   });

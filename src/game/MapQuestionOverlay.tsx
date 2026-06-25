@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowRight,
+  Clock,
   FileSearch,
   Radio,
   ShieldCheck,
@@ -16,8 +17,11 @@ interface QuestionOverlayProps {
   showVotes: boolean;
   revealed: boolean;
   votes: number[];
+  secondsLeft: number;
   onPick: (key: DecisionOption["key"]) => void;
 }
+
+const QUESTION_WARN_AT = 10;
 
 interface PhaseStatusProps {
   round: Round;
@@ -120,9 +124,11 @@ export function MapQuestionOverlay({
   showVotes,
   revealed,
   votes,
+  secondsLeft,
   onPick,
 }: QuestionOverlayProps) {
   const chips = EVIDENCE_CHIPS[round.index] ?? [round.stage, round.riskLevel, round.time];
+  const warning = secondsLeft <= QUESTION_WARN_AT;
 
   return (
     <motion.div
@@ -143,10 +149,38 @@ export function MapQuestionOverlay({
             {round.title}
           </h2>
         </div>
-        <div className="rounded-full border border-neon-red/40 bg-[oklch(0.2_0.08_25/0.45)] px-3 py-1 text-[10px] uppercase tracking-widest text-neon-red">
-          Rủi ro: {round.riskLevel}
+        <div className="flex items-center gap-2">
+          <motion.div
+            animate={warning ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+            transition={warning ? { repeat: Infinity, duration: 0.7 } : { duration: 0.2 }}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-display tabular-nums ${
+              warning
+                ? "border-neon-red/70 bg-[oklch(0.2_0.1_25/0.6)] text-neon-red shadow-neon"
+                : "border-neon-amber/50 bg-[oklch(0.2_0.08_80/0.4)] text-neon-amber"
+            }`}
+          >
+            {warning ? <AlertTriangle size={14} /> : <Clock size={14} />}
+            <span className="text-lg leading-none">{secondsLeft}s</span>
+          </motion.div>
+          <div className="rounded-full border border-neon-red/40 bg-[oklch(0.2_0.08_25/0.45)] px-3 py-1 text-[10px] uppercase tracking-widest text-neon-red">
+            Rủi ro: {round.riskLevel}
+          </div>
         </div>
       </div>
+
+      {warning && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: [1, 0.55, 1], y: 0 }}
+          transition={{ opacity: { repeat: Infinity, duration: 1 } }}
+          className="mb-3 flex items-center gap-2 rounded-2xl border border-neon-red/60 bg-[oklch(0.2_0.1_25/0.55)] px-4 py-2 text-neon-red"
+        >
+          <AlertTriangle size={18} className="flex-shrink-0" />
+          <span className="font-display text-sm md:text-base">
+            {secondsLeft} giây nữa ransomware sẽ mã hóa TOÀN BỘ công ty!
+          </span>
+        </motion.div>
+      )}
 
       <div className="mb-3 flex flex-wrap gap-2">
         {chips.map((chip) => (

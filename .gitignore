@@ -23,6 +23,11 @@ dist-ssr
 # Collected participant data
 data/
 
+# Env files (giữ lại .env.example)
+.env
+.env.*
+!.env.example
+
 # Vercel
 .vercel
 

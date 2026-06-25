@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Award,
   Bug,
   Clock,
   Eye,
   FileText,
+  Lock,
   Play,
   Radio,
   RotateCcw,
@@ -32,6 +34,7 @@ import {
   ROUNDS,
   gradeFinal,
   type GameMode,
+  type GradeResult,
   type MetricChange,
   type Metrics,
   type NodeId,
@@ -48,6 +51,22 @@ const MODE_LABELS: Record<GameMode, string> = {
 
 const PRE_QUESTION_WAIT_MS = 3000;
 const CONSEQUENCE_WAIT_MS = 5000;
+
+// Mỗi câu hỏi chỉ có 30 giây để trả lời. Từ giây thứ 10 trở xuống sẽ bật
+// hiệu ứng cảnh báo đỏ; hết giờ thì mã hóa toàn bộ và thua cuộc.
+const QUESTION_TIME = 30;
+const QUESTION_WARN_AT = 10;
+const ENCRYPT_TAKEOVER_MS = 4200;
+
+const TIMEOUT_DEFEAT: GradeResult = {
+  grade: "Hết giờ — toàn bộ công ty đã bị mã hóa.",
+  message:
+    "Bạn không đưa ra quyết định trong 30 giây. Ransomware không chờ đợi: toàn bộ hệ thống đã bị khóa, bản sao dữ liệu mất sạch và công ty thất thủ.",
+  tone: "fail",
+  badge: "Total Lockdown",
+  badgeDescription:
+    "Khi thời gian đếm về 0, ransomware mã hóa mọi thứ. Quyết định chậm cũng là một quyết định — và đây là cái giá của nó.",
+};
 
 type UiPhase = "preQuestion" | "question" | "consequence";
 
@@ -99,9 +118,14 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
   const [revealed, setRevealed] = useState(false);
   const [showVotes, setShowVotes] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [questionSeconds, setQuestionSeconds] = useState(QUESTION_TIME);
+  const [encrypting, setEncrypting] = useState(false);
+  const [forcedResult, setForcedResult] = useState<GradeResult | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const encryptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timedOutRef = useRef(false);
 
   const round = ROUNDS[roundIdx];
   const isStage = mode === "stage";
@@ -166,8 +190,69 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     return () => {
       if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      if (encryptTimerRef.current) clearTimeout(encryptTimerRef.current);
     };
   }, []);
+
+  // Đếm ngược 30 giây cho mỗi câu hỏi. Chỉ chạy khi đang ở phase "question".
+  // Khi đổi phase (đã trả lời) hoặc sang vòng khác, interval được dọn sạch.
+  useEffect(() => {
+    if (uiPhase !== "question") return;
+    setQuestionSeconds(QUESTION_TIME);
+    timedOutRef.current = false;
+
+    const id = setInterval(() => {
+      setQuestionSeconds((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          handleQuestionTimeout();
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiPhase, roundIdx]);
+
+  // Hết 30 giây mà chưa trả lời: hủy câu hỏi, mã hóa toàn bộ công ty rồi thua.
+  function handleQuestionTimeout() {
+    if (timedOutRef.current || finished || encrypting) return;
+    timedOutRef.current = true;
+
+    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+
+    setNodes((ns) => ns.map((n) => ({ ...n, status: "down" as NodeStatus })));
+    setMetrics((m) => {
+      setPrevMetrics(m);
+      return applyMetrics(m, {
+        encryptedData: 100,
+        backupHealth: -100,
+        customerTrust: -100,
+        recoveryReadiness: -100,
+        businessImpact: 100,
+        reputationDamage: 100,
+      });
+    });
+    setPulseKey((k) => k + 1);
+    setInfectionPulse({
+      from: "fileserver",
+      to: ["email", "employee", "finance", "ops", "customers", "backup", "soc"],
+    });
+
+    setUiPhase("consequence");
+    setAnswerResult(null);
+    setForcedResult(TIMEOUT_DEFEAT);
+    setEncrypting(true);
+
+    if (encryptTimerRef.current) clearTimeout(encryptTimerRef.current);
+    encryptTimerRef.current = setTimeout(() => {
+      setEncrypting(false);
+      setFinished(true);
+    }, ENCRYPT_TAKEOVER_MS);
+  }
 
   function advanceAfterConsequence() {
     if (phaseTimerRef.current) {
@@ -269,6 +354,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
   function restart() {
     if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    if (encryptTimerRef.current) clearTimeout(encryptTimerRef.current);
     setRoundIdx(0);
     setMetrics(INITIAL_METRICS);
     setPrevMetrics(INITIAL_METRICS);
@@ -279,6 +365,9 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     setInfectionPulse(null);
     setRecoveryPulse(null);
     setSeconds(15 * 60);
+    setQuestionSeconds(QUESTION_TIME);
+    setEncrypting(false);
+    setForcedResult(null);
   }
 
   function triggerInfection() {
@@ -318,7 +407,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     return (
       <FinalReport
         metrics={metrics}
-        result={gradeFinal(metrics)}
+        result={forcedResult ?? gradeFinal(metrics)}
         teamName={teamName}
         onRestart={() => {
           restart();
@@ -364,6 +453,16 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     <div className="relative min-h-screen overflow-hidden p-3 md:p-4">
       <div className="pointer-events-none fixed inset-0 opacity-70 grid-bg" />
       <div className="pointer-events-none fixed inset-0 crisis-ambient" />
+
+      {/* Viền màn hình đỏ nhấp nháy khi còn <=10 giây */}
+      {uiPhase === "question" && questionSeconds <= QUESTION_WARN_AT && !encrypting && (
+        <motion.div
+          className="pointer-events-none fixed inset-0 z-30"
+          animate={{ opacity: [0.25, 0.7, 0.25] }}
+          transition={{ repeat: Infinity, duration: 1 }}
+          style={{ boxShadow: "inset 0 0 220px 50px oklch(0.55 0.26 25 / 0.65)" }}
+        />
+      )}
 
       <div className="relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1800px] flex-col gap-4">
         <header className="glass-strong rounded-2xl px-4 md:px-5 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -464,6 +563,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
                     showVotes={showVotes}
                     revealed={revealed}
                     votes={votes}
+                    secondsLeft={questionSeconds}
                     onPick={pickOption}
                   />
                 )}
@@ -494,6 +594,8 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
           </div>
         </main>
       </div>
+
+      <AnimatePresence>{encrypting && <EncryptionTakeover />}</AnimatePresence>
 
       <AnimatePresence>
         {hostOpen && (
@@ -580,6 +682,76 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+const LOCKED_FILES = [
+  "hop_dong_2026.docx.locked",
+  "bao_cao_tai_chinh.xlsx.locked",
+  "ke_hoach_kinh_doanh.pptx.locked",
+  "du_lieu_khach_hang.db.locked",
+  "backup_he_thong.bak.locked",
+  "luong_nhan_vien.xlsx.locked",
+  "ma_nguon_san_pham.zip.locked",
+  "hoa_don_dien_tu.pdf.locked",
+];
+
+function EncryptionTakeover() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-[oklch(0.06_0.03_25/0.97)] p-6 backdrop-blur-md"
+    >
+      <div className="pointer-events-none absolute inset-0 grid-bg opacity-30" />
+      <motion.div
+        animate={{ scale: [1, 1.12, 1], opacity: [0.85, 1, 0.85] }}
+        transition={{ repeat: Infinity, duration: 1.1 }}
+        className="grid h-24 w-24 place-items-center rounded-3xl border border-neon-red/60 bg-[oklch(0.15_0.08_25/0.6)] text-neon-red shadow-neon"
+      >
+        <Lock size={56} />
+      </motion.div>
+
+      <div className="text-center">
+        <div className="mb-2 flex items-center justify-center gap-2 text-xs uppercase tracking-[0.3em] text-neon-red">
+          <AlertTriangle size={14} /> Hết thời gian
+        </div>
+        <motion.h2
+          animate={{ x: [0, -2, 2, -1, 0] }}
+          transition={{ repeat: Infinity, duration: 0.35 }}
+          className="font-display text-2xl leading-tight text-neon-red text-glow-red md:text-4xl"
+        >
+          ĐANG MÃ HÓA TOÀN BỘ HỆ THỐNG CÔNG TY
+        </motion.h2>
+        <p className="mt-2 text-sm text-foreground/70 md:text-base">
+          Ransomware đang khóa mọi tệp dữ liệu. Không thể hoàn tác.
+        </p>
+      </div>
+
+      <div className="h-2.5 w-full max-w-md overflow-hidden rounded-full border border-neon-red/40 bg-[oklch(0.12_0.04_25/0.7)]">
+        <motion.div
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: ENCRYPT_TAKEOVER_MS / 1000, ease: "linear" }}
+          className="h-full gradient-danger"
+        />
+      </div>
+
+      <div className="w-full max-w-md space-y-1 font-mono text-xs text-neon-red/80">
+        {LOCKED_FILES.map((file, i) => (
+          <motion.div
+            key={file}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 + i * 0.35 }}
+            className="flex items-center gap-2"
+          >
+            <Lock size={11} /> {file}
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 
