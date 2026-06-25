@@ -7,6 +7,7 @@ import { HQGQuiz } from "@/game/landing/HQGQuiz";
 import { QuizComplete } from "@/game/landing/QuizComplete";
 import { SafetyNote } from "@/game/landing/SafetyNote";
 import { FEEDBACK_MS, HQG_QUIZ } from "@/game/landing/quizData";
+import { saveParticipant } from "@/lib/api/participants.functions";
 import type { LandingStep, QuizAnswer, QuizFeedback, QuizKey } from "@/game/landing/types";
 
 interface Props {
@@ -40,6 +41,19 @@ export function Landing({ onStart }: Props) {
   function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canContinue) return;
+
+    // Lưu thông tin người chơi vào tệp Excel ở phía máy chủ. Không chặn
+    // luồng chơi nếu việc lưu gặp lỗi — vẫn cho người dùng tiếp tục.
+    void saveParticipant({
+      data: {
+        playerName: trimmedName,
+        company: company.trim(),
+        phone: phone.trim(),
+      },
+    }).catch((error) => {
+      console.error("Không thể lưu thông tin người chơi vào Excel:", error);
+    });
+
     setStep("agreement");
   }
 

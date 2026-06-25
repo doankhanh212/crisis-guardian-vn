@@ -12,4 +12,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Host on Vercel (default target is Cloudflare). Applies only outside a
+  // Lovable build, where the preset is forced back to Cloudflare.
+  nitro: { preset: "vercel" },
 });
