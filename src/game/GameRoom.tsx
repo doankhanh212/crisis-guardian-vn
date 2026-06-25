@@ -52,16 +52,16 @@ const MODE_LABELS: Record<GameMode, string> = {
 const PRE_QUESTION_WAIT_MS = 3000;
 const CONSEQUENCE_WAIT_MS = 5000;
 
-// Mỗi câu hỏi chỉ có 30 giây để trả lời. Từ giây thứ 10 trở xuống sẽ bật
+// Mỗi câu hỏi chỉ có 20 giây để trả lời. Từ giây thứ 10 trở xuống sẽ bật
 // hiệu ứng cảnh báo đỏ; hết giờ thì mã hóa toàn bộ và thua cuộc.
-const QUESTION_TIME = 30;
+const QUESTION_TIME = 20;
 const QUESTION_WARN_AT = 10;
 const ENCRYPT_TAKEOVER_MS = 4200;
 
 const TIMEOUT_DEFEAT: GradeResult = {
   grade: "Hết giờ — toàn bộ công ty đã bị mã hóa.",
   message:
-    "Bạn không đưa ra quyết định trong 30 giây. Ransomware không chờ đợi: toàn bộ hệ thống đã bị khóa, bản sao dữ liệu mất sạch và công ty thất thủ.",
+    "Bạn không đưa ra quyết định trong 20 giây. Ransomware không chờ đợi: toàn bộ hệ thống đã bị khóa, bản sao dữ liệu mất sạch và công ty thất thủ.",
   tone: "fail",
   badge: "Total Lockdown",
   badgeDescription:
@@ -194,7 +194,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     };
   }, []);
 
-  // Đếm ngược 30 giây cho mỗi câu hỏi. Chỉ chạy khi đang ở phase "question".
+  // Đếm ngược 20 giây cho mỗi câu hỏi. Chỉ chạy khi đang ở phase "question".
   // Khi đổi phase (đã trả lời) hoặc sang vòng khác, interval được dọn sạch.
   useEffect(() => {
     if (uiPhase !== "question") return;
@@ -216,7 +216,7 @@ export function GameRoom({ mode, teamName, onExit }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uiPhase, roundIdx]);
 
-  // Hết 30 giây mà chưa trả lời: hủy câu hỏi, mã hóa toàn bộ công ty rồi thua.
+  // Hết 20 giây mà chưa trả lời: hủy câu hỏi, mã hóa toàn bộ công ty rồi thua.
   function handleQuestionTimeout() {
     if (timedOutRef.current || finished || encrypting) return;
     timedOutRef.current = true;

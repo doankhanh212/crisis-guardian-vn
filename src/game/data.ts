@@ -121,10 +121,10 @@ export const ROUNDS: Round[] = [
     scenario:
       "Máy kế toán nhận một email hóa đơn nghe rất khẩn cấp. File nhìn giống PDF nhưng lại kết thúc bằng .exe. Đây có thể là email lừa đảo dùng để thả virus khóa dữ liệu. Nếu xử lý sai, phòng kế toán sẽ có một buổi sáng rất dài.",
     options: [
-      { key: "A", text: "Mở file ngay", good: false },
-      { key: "B", text: "Chuyển tiếp cho đồng nghiệp", good: false },
-      { key: "C", text: "Báo đội cứu hộ kỹ thuật", good: true },
-      { key: "D", text: "Tải lên cloud cá nhân", good: false },
+      { key: "A", text: "Mở file kiểm tra rồi mới báo đội kỹ thuật", good: false },
+      { key: "B", text: "Chuyển tiếp cho đồng nghiệp xem giúp", good: false },
+      { key: "C", text: "Báo ngay đội kỹ thuật và tuyệt đối không mở file", good: true },
+      { key: "D", text: "Tải lên cloud cá nhân cho chắc", good: false },
     ],
     bestAnswer: "C",
     goodConsequence:
@@ -190,10 +190,10 @@ export const ROUNDS: Round[] = [
     scenario:
       "Kho dữ liệu công ty bắt đầu xuất hiện nhiều file bị khóa. Hợp đồng, báo cáo và kế hoạch vẫn nằm đó, nhưng nhân viên không mở được. Nếu không khoanh vùng nhanh, nhiều phòng ban sẽ đứng hình tập thể.",
     options: [
-      { key: "A", text: "Tắt đại toàn bộ", good: false },
-      { key: "B", text: "Cô lập và khoanh vùng", good: true },
-      { key: "C", text: "Chờ thêm 30 phút xem có tự hết không", good: false },
-      { key: "D", text: "Chia sẻ tài khoản admin", good: false },
+      { key: "A", text: "Tắt toàn bộ hệ thống ngay lập tức", good: false },
+      { key: "B", text: "Cô lập vùng nhiễm rồi khoanh vùng điều tra", good: true },
+      { key: "C", text: "Cô lập vùng nhiễm rồi khôi phục lại ngay", good: false },
+      { key: "D", text: "Chia sẻ tài khoản admin cho cả đội xử lý", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
@@ -225,10 +225,10 @@ export const ROUNDS: Round[] = [
     scenario:
       "Kho dữ liệu cứu hộ vẫn đang nối với hệ thống chính. Mọi người nói: 'Không sao đâu, mình có bản sao dữ liệu mà.' Nhưng nếu virus khóa dữ liệu lan tới bản sao này, công ty có thể mất luôn phao cứu sinh cuối cùng.",
     options: [
-      { key: "A", text: "Bảo vệ bản sao ngay", good: true },
-      { key: "B", text: "Bỏ qua vì đã có bản sao", good: false },
-      { key: "C", text: "Xóa bớt cho nhẹ", good: false },
-      { key: "D", text: "Mở quyền cho mọi người", good: false },
+      { key: "A", text: "Ngắt kết nối bản sao khỏi mạng chính để bảo vệ", good: true },
+      { key: "B", text: "Sao thêm một bản nữa rồi giữ nguyên kết nối", good: false },
+      { key: "C", text: "Xóa bớt dữ liệu cũ cho nhẹ", good: false },
+      { key: "D", text: "Mở quyền truy cập bản sao cho mọi người", good: false },
     ],
     bestAnswer: "A",
     goodConsequence:
@@ -318,10 +318,10 @@ export const ROUNDS: Round[] = [
     scenario:
       "Đội cứu hộ kỹ thuật tìm thấy một bản sao dữ liệu sạch. Cả phòng vui như bắt được Wi-Fi mạnh ở sân bay. Nhưng nếu khôi phục lên hệ thống còn nhiễm, virus khóa dữ liệu có thể quay lại ngay.",
     options: [
-      { key: "A", text: "Khôi phục ngay", good: false },
-      { key: "B", text: "Làm sạch rồi khôi phục", good: true },
-      { key: "C", text: "Gửi file cho từng người", good: false },
-      { key: "D", text: "Nhập lại bằng Excel", good: false },
+      { key: "A", text: "Khôi phục ngay lên hệ thống hiện tại", good: false },
+      { key: "B", text: "Làm sạch môi trường xong mới khôi phục bản sao", good: true },
+      { key: "C", text: "Khôi phục bản sao trước rồi làm sạch sau", good: false },
+      { key: "D", text: "Nhập lại dữ liệu thủ công bằng Excel", good: false },
     ],
     bestAnswer: "B",
     goodConsequence:
@@ -360,10 +360,10 @@ export const ROUNDS: Round[] = [
     scenario:
       "Công ty hoạt động lại. Lãnh đạo hỏi: 'Làm sao để chuyện này không lặp lại?' Đây là lúc chọn giữa an toàn thật và slide PowerPoint rất đẹp nhưng không ai làm.",
     options: [
-      { key: "A", text: "Đào tạo, MFA, sao lưu, bảo vệ", good: true },
-      { key: "B", text: "Đổi hình nền cảnh báo", good: false },
-      { key: "C", text: "Đổi mật khẩu một lần", good: false },
-      { key: "D", text: "Không làm gì nữa", good: false },
+      { key: "A", text: "Đào tạo định kỳ + MFA + sao lưu tách biệt + quy trình ứng phó", good: true },
+      { key: "B", text: "Mua phần mềm diệt virus đắt nhất thị trường là xong", good: false },
+      { key: "C", text: "Đào tạo nhân viên đúng một buổi thật hoành tráng rồi thôi", good: false },
+      { key: "D", text: "Đổi hết mật khẩu thành '12 ký tự siêu khó' rồi dán lên màn hình", good: false },
     ],
     bestAnswer: "A",
     goodConsequence:
